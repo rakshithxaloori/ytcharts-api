@@ -1,0 +1,17 @@
+.env
+# Environment
+.vscode
+*.env*
+
+# Cache
+*.pyc
+
+db.sqlite3
+static
+media
+
+# Custom
+**/custom.py
+**.DS_Store
+celerybeat-schedule
+_custom/*

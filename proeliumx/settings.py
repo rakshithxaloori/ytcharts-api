@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "knox",
     "authentication",
     "yt",
+    "emails",
 ]
 
 MIDDLEWARE = [
@@ -143,7 +144,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = "static/"
+
+AWS_S3_ACCESS_KEY_ID = os.environ["AWS_S3_ACCESS_KEY_ID"]
+AWS_S3_SECRET_ACCESS_KEY = os.environ["AWS_S3_SECRET_ACCESS_KEY"]
+AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
+AWS_S3_REGION_NAME = os.environ["AWS_S3_REGION_NAME"]
+AWS_S3_CUSTOM_DOMAIN = os.environ["AWS_S3_CUSTOM_DOMAIN"]
+AWS_QUERYSTRING_AUTH = False
+
+MEDIA_URL = "https://{}/media/".format(AWS_S3_CUSTOM_DOMAIN)
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+
+if CI_CD_STAGE == DEV_STAGE:
+    STATIC_URL = "/static/"
+    STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+elif CI_CD_STAGE == TEST_STAGE or CI_CD_STAGE == PROD_STAGE:
+    STATIC_URL = "https://{}/static/".format(AWS_S3_CUSTOM_DOMAIN)
+    STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -161,3 +180,14 @@ GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
 ################################################################################
 # Google API
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+
+################################################################################
+# Resend
+RESEND_API_KEY = os.environ["RESEND_API_KEY"]
+
+################################################################################
+# AWS SES
+AWS_SES_ACCESS_KEY_ID = os.environ["AWS_SES_ACCESS_KEY_ID"]
+AWS_SES_SECRET_ACCESS_KEY = os.environ["AWS_SES_SECRET_ACCESS_KEY"]
+AWS_SES_REGION_NAME = "us-east-1"
+AWS_SES_REGION_ENDPOINT = "email.us-east-1.amazonaws.com"

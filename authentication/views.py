@@ -30,12 +30,11 @@ def signout_view(request):
 
 
 @api_view(["POST"])
-# @permission_classes([HasAPIKey])
+@permission_classes([HasAPIKey])
 def signin_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
     expires_at = request.data.get("expires_at", None)
-    print(access_token, refresh_token, expires_at)
 
     if None in [access_token, refresh_token, expires_at]:
         return BAD_REQUEST_RESPONSE

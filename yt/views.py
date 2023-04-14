@@ -1,5 +1,4 @@
 from django.http import JsonResponse
-from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -24,6 +23,9 @@ from yt.instances_utils import (
     create_or_update_yt_keys,
     create_delete_update_yt_channels,
 )
+from yt.models import DailyViews
+from yt.serializers import DailyViewsSerializer
+from yt.isocodes import ISO_CODES
 
 
 @api_view(["GET"])
@@ -69,3 +71,23 @@ def connect_yt_view(request):
         return token_response(user)
     except User.DoesNotExist:
         return BAD_REQUEST_RESPONSE
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated, HasAPIKey])
+def get_views_view(request):
+    video_id = request.data.get("video_id", None)
+    country_code = request.data.get("country_code", "##")
+    num_days = request.data.get("num_days", 30)
+
+    if country_code != "##" and country_code not in ISO_CODES.keys():
+        return BAD_REQUEST_RESPONSE
+    daily_views = DailyViews.objects.filter(
+        video__id=video_id, country_code=country_code
+    ).order_by("-date")[:num_days]
+    daily_views_data = DailyViewsSerializer(daily_views, many=True).data
+    return JsonResponse(
+        {"detail": "Daily views", "payload": daily_views_data},
+        status=status.HTTP_200_OK,
+    )

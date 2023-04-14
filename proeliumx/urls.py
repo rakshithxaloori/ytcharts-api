@@ -16,7 +16,8 @@ Including another URLconf
 import os
 from django.contrib import admin
 from django.urls import path, include
-
+from django.conf import settings
+from django.conf.urls.static import static
 
 admin_url = "admin"
 
@@ -29,3 +30,6 @@ urlpatterns = [
     path("authentication/", include("authentication.urls")),
     path("yt/", include("yt.urls")),
 ]
+
+if os.environ["CI_CD_STAGE"] == "development":
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

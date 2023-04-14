@@ -11,7 +11,7 @@ from proeliumx.utils import get_now_timestamp
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
-def get_daily_views(user, video_id):
+def get_daily_views(username, video_id, country=None):
     # Set the start and end dates for the report (last 3 months)
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
@@ -25,11 +25,13 @@ def get_daily_views(user, video_id):
         "dimensions": "day",
         "startDate": start_date,
         "endDate": end_date,
-        "filters": f"video=={video_id}",
+        "filters": f"video=={video_id}"
+        if country is None
+        else f"video=={video_id};country=={country}",
     }
 
     # Set the authorization header with the access token
-    access_token = get_access_token(user.username)
+    access_token = get_access_token(username)
     headers = {"Authorization": f"Bearer {access_token}"}
 
     # Make the API request
@@ -38,9 +40,38 @@ def get_daily_views(user, video_id):
     # Parse the response and extract the view count
     if response.ok:
         data = response.json()
-        return data["rows"]
+        return data
     else:
-        print(response)
+        print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        return None
+
+
+def get_demographics(username, channel_id, country=None):
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
+        "%Y-%m-%d"
+    )
+    params = {
+        "ids": f"channel=={channel_id}",
+        "metrics": "viewerPercentage",
+        "dimensions": "ageGroup,gender",
+        "startDate": start_date,
+        "endDate": end_date,
+        "sort": "gender,ageGroup",
+    }
+    if country is not None:
+        params["filters"] = f"country=={country}"
+
+    # Set the headers with the access_token
+    access_token = get_access_token(username)
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Send the request and get the response
+    response = requests.get(yt_reports_endpoint, params=params, headers=headers)
+    if response.ok:
+        data = response.json()
+        return data
+    else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
         return None
 

@@ -67,6 +67,9 @@ class DailyViews(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField()
+    # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+    # '##' for global views
+    country_code = models.CharField(max_length=2)
     views = models.PositiveBigIntegerField(default=0)
 
     def __str__(self):

@@ -2,7 +2,7 @@ from emails.models import Email
 from emails.utils import EmailClient, send_email
 
 
-def send_email_task(email_pk, client=EmailClient.SES):
+def send_email_task(email_pk, client=EmailClient.RESEND):
     try:
         email = Email.objects.get(pk=email_pk)
         msg_id = send_email(

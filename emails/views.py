@@ -19,7 +19,7 @@ from knox.auth import TokenAuthentication
 
 
 from proeliumx.utils import BAD_REQUEST_RESPONSE
-from emails.tasks import send_email_task, delete_orphaned_chart_png_task
+from emails.tasks import send_email_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
 from emails.utils import get_cdn_url
@@ -42,8 +42,6 @@ def get_presigned_post_view(request):
     json_str = json.dumps(params)
     filename = base64.b64encode(json_str.encode("utf-8")).decode("utf-8") + ".png"
     file_path = request.user.username + "/" + filename
-    # TODO check if a chart_png
-    # with the same params already exists
     try:
         chart_png = ChartPNG.objects.get(user=request.user, path=file_path)
         return JsonResponse(
@@ -62,13 +60,6 @@ def get_presigned_post_view(request):
             return BAD_REQUEST_RESPONSE
         chart_png = ChartPNG.objects.create(
             user=request.user, path=file_path, params=params
-        )
-
-        delete_orphaned_chart_png_task.apply_async(
-            args=[chart_png.id],
-            kwargs={
-                "eta": timezone.now() + timezone.timedelta(hours=1),
-            },
         )
 
         return JsonResponse(

@@ -50,6 +50,7 @@ class ChartPNG(models.Model):
     emails = models.ManyToManyField(
         Email,
         related_name="chart_pngs",
+        through="EmailChartPNG",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -63,3 +64,17 @@ class ChartPNG(models.Model):
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Chart PNGs"
+
+
+class EmailChartPNG(models.Model):
+    email = models.ForeignKey(
+        Email, on_delete=models.CASCADE, null=True, blank=True, default=None
+    )
+    chart_png = models.ForeignKey(ChartPNG, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    class Meta:
+        unique_together = ("email", "chart_png")
+        verbose_name_plural = "Email Chart PNGs"

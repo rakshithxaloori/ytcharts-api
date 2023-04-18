@@ -4,7 +4,7 @@ from celery.schedules import crontab
 
 from proeliumx.celery import app as celery_app
 
-from emails.models import Email, ChartPNG
+from emails.models import Email, ChartPNG, EmailChartPNG
 from emails.utils import EmailClient, send_email
 
 
@@ -38,10 +38,8 @@ def send_email_task(email_pk, client=EmailClient.RESEND):
 
 
 @celery_app.task
-def delete_orphaned_chart_png_task(chart_png_id=None):
-    try:
-        chart_png = ChartPNG.objects.get(pk=chart_png_id)
-        if chart_png.emails.count() == 0:
-            chart_png.delete()
-    except ChartPNG.DoesNotExist:
-        pass
+def delete_orphaned_chart_pngs_task():
+    email_chart_pngs = EmailChartPNG.objects.filter(
+        email=None, created_at__lt=timezone.now() - timezone.timedelta(hours=2)
+    )
+    ChartPNG.objects.filter(emailchartpng__in=email_chart_pngs).delete()

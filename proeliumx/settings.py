@@ -191,3 +191,13 @@ AWS_SES_ACCESS_KEY_ID = os.environ["AWS_SES_ACCESS_KEY_ID"]
 AWS_SES_SECRET_ACCESS_KEY = os.environ["AWS_SES_SECRET_ACCESS_KEY"]
 AWS_SES_REGION_NAME = "us-east-1"
 AWS_SES_REGION_ENDPOINT = "email.us-east-1.amazonaws.com"
+
+################################################################################
+# Celery
+REDIS_URL = os.environ["REDIS_URL"]
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"

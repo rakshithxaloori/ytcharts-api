@@ -62,3 +62,7 @@ def send_email(to, subject, html_message, sender, reply_to, client=EmailClient.S
         except ClientError as e:
             print("SES ERROR", e.response["Error"]["Message"])
             return None
+
+
+def get_cdn_url(file_path):
+    return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{file_path}"

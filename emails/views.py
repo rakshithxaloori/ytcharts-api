@@ -1,6 +1,9 @@
 import json
 import base64
+
 from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -16,56 +19,110 @@ from knox.auth import TokenAuthentication
 
 
 from proeliumx.utils import BAD_REQUEST_RESPONSE
-from emails.tasks import send_email_task
+from emails.tasks import send_email_task, delete_orphaned_chart_png_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
-
-# TODO SES Notifications success, failed view
+from emails.utils import get_cdn_url
 
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes(
+    [
+        IsAuthenticated,
+        #   HasAPIKey
+    ]
+)
 def get_presigned_post_view(request):
     params = request.data.get("params", None)
     size = request.data.get("size", None)
-    if params is None or size > 5 * 1024 * 1024:  # 5 MB
+    if None in [params, size] or size > 1 * 1024 * 1024:  # 1 MB
         return BAD_REQUEST_RESPONSE
 
     json_str = json.dumps(params)
     filename = base64.b64encode(json_str.encode("utf-8")).decode("utf-8") + ".png"
     file_path = request.user.username + "/" + filename
+    # TODO check if a chart_png
+    # with the same params already exists
+    try:
+        chart_png = ChartPNG.objects.get(user=request.user, path=file_path)
+        return JsonResponse(
+            {
+                "detail": "ChartPNG already exists",
+                "payload": {
+                    "chart_png_id": chart_png.id,
+                    "chart_png_url": get_cdn_url(chart_png.path),
+                },
+            },
+            status=status.HTTP_208_ALREADY_REPORTED,
+        )
+    except ChartPNG.DoesNotExist:
+        presigned_post = create_presigned_s3_post(size, file_path)
+        if presigned_post is None:
+            return BAD_REQUEST_RESPONSE
+        chart_png = ChartPNG.objects.create(
+            user=request.user, path=file_path, params=params
+        )
 
-    presigned_post = create_presigned_s3_post(size, file_path)
-    if presigned_post is None:
-        return BAD_REQUEST_RESPONSE
-    chart_png = ChartPNG.objects.create(user=request.user, path=file_path)
-    presigned_post["chart_png_id"] = chart_png.id
-    return JsonResponse(
-        {"detail": "Presigned post", "payload": {"url": presigned_post}},
-        status=status.HTTP_200_OK,
-    )
+        delete_orphaned_chart_png_task.apply_async(
+            args=[chart_png.id],
+            kwargs={
+                "eta": timezone.now() + timezone.timedelta(hours=1),
+            },
+        )
+
+        return JsonResponse(
+            {
+                "detail": "Presigned post",
+                "payload": {
+                    "url": presigned_post,
+                    "chart_png_id": chart_png.id,
+                    "chart_png_url": get_cdn_url(chart_png.path),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated, HasAPIKey])
 def post_email_view(request):
-    html_message = request.data.get("html_message", None)
-    brand_email = request.data.get("brand_email", None)
+    to = request.data.get("to", None)
     subject = request.data.get("subject", None)
+    html_message = request.data.get("html_message", None)
+    chart_pngs_ids = request.data.get("chart_pngs", None)
+    type = request.data.get("type", None)
 
-    if None in [html_message, brand_email, subject]:
+    if None in [html_message, to, subject, chart_pngs_ids, type]:
         return BAD_REQUEST_RESPONSE
+
+    if Email.objects.filter(
+        to=to, created_at__gt=timezone.now() - timezone.timedelta(days=7)
+    ).exists():
+        return JsonResponse(
+            {"detail": "Emails to a brand can only be sent once a week"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     email = Email.objects.create(
         user=request.user,
-        to=brand_email,
+        to=to,
         subject=subject,
         html_message=html_message,
         sender=request.user.username + "@creators.proeliumx.com",
         reply_to=request.user.email,
+        type=type,
     )
+
+    # Add email to chart_pngs
+    for chart_png in ChartPNG.objects.filter(id__in=chart_pngs_ids):
+        chart_png.emails.add(email)
 
     send_email_task.delay(email.id)
     return JsonResponse({"detail": "Email queued"}, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+def resend_webhook_view(request):
+    pass

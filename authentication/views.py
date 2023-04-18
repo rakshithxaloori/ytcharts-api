@@ -30,7 +30,7 @@ def signout_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([HasAPIKey])
+# @permission_classes([HasAPIKey])
 def signin_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)

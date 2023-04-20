@@ -6,14 +6,24 @@ from authentication.models import User
 
 class Email(models.Model):
     QUEUED = "q"
+    # Resend types https://resend.com/docs/webhooks
     SENT = "s"
     DELIVERED = "d"
+    DELIVERY_DELAYED = "dd"
+    COMPLAINED = "c"
     BOUNCED = "b"
+    OPENED = "o"
+    CLICKED = "cl"
+
     STATUS_CHOICES = (
         (QUEUED, "Queued"),
         (SENT, "Sent"),
         (DELIVERED, "Delivered"),
+        (DELIVERY_DELAYED, "Delivery Delayed"),
+        (COMPLAINED, "Complained"),
         (BOUNCED, "Bounced"),
+        (OPENED, "Opened"),
+        (CLICKED, "Clicked"),
     )
 
     TEST = "t"
@@ -33,8 +43,10 @@ class Email(models.Model):
     sender = models.EmailField()
     reply_to = models.EmailField()
 
-    message_id = models.CharField(max_length=255, null=True, blank=True)
-    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=QUEUED)
+    message_id = models.CharField(
+        max_length=255, null=True, blank=True
+    )  # Provided by the email service
+    status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=QUEUED)
     type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=LIVE)
 
     def __str__(self) -> str:

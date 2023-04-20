@@ -184,6 +184,7 @@ GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 ################################################################################
 # Resend
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
+RESEND_WEBHOOK_SIGNING_KEY = os.environ["RESEND_WEBHOOK_SIGNING_KEY"]
 
 ################################################################################
 # AWS SES
@@ -201,3 +202,26 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+################################################################################
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://*.proeliumx.com",
+]
+
+if CI_CD_STAGE == DEV_STAGE:
+    CSRF_TRUSTED_ORIGINS.append(
+        "https://*.ngrok-free.app",
+    )
+
+################################################################################
+# CORS
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://\w+\.proeliumx\.com$"]
+
+if CI_CD_STAGE == DEV_STAGE:
+    CORS_ALLOWED_ORIGIN_REGEXES.append(
+        r"^https://\w+\.ngrok-free\.app$",
+    )
+
+CORS_ALLOW_METHODS = ["GET", "POST"]

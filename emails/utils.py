@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 
 from django.conf import settings
 
+from emails.models import Email
 
 ses_client = boto3.client(
     service_name="ses",
@@ -14,13 +15,8 @@ ses_client = boto3.client(
 )
 
 
-class EmailClient:
-    RESEND = "resend"
-    SES = "ses"
-
-
-def send_email(to, subject, html_message, sender, reply_to, client=EmailClient.SES):
-    if client == EmailClient.RESEND:
+def send_email(to, subject, html_message, sender, reply_to, client=Email.SES):
+    if client == Email.RESEND:
         api_key = settings.RESEND_API_KEY
         endpoint = "https://api.resend.com/email"
         headers = {
@@ -43,7 +39,7 @@ def send_email(to, subject, html_message, sender, reply_to, client=EmailClient.S
         else:
             print("RESEND ERROR", response.text)
             return None
-    elif client == EmailClient.SES:
+    elif client == Email.SES:
         try:
             response = ses_client.send_email(
                 Source=sender,

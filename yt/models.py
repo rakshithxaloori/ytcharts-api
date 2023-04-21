@@ -51,7 +51,7 @@ class AccessKeys(models.Model):
     # https://developers.google.com/identity/protocols/oauth2#expiration
 
     def __str__(self):
-        return f"{self.user.username} | {self.key}"
+        return f"{self.user.username} | {self.is_refresh_valid}"
 
     class Meta:
         ordering = ["-created_at"]
@@ -59,6 +59,7 @@ class AccessKeys(models.Model):
 
 
 class DailyViews(models.Model):
+    # X-axis - date
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="daily_views")
     video = models.ForeignKey(
         Video, on_delete=models.CASCADE, related_name="daily_views"
@@ -78,3 +79,29 @@ class DailyViews(models.Model):
     class Meta:
         ordering = ["date"]
         verbose_name_plural = "Daily Views"
+
+
+class DemographicsViews(models.Model):
+    # X-axis - ageGroup,gender
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="demographics_views"
+    )
+    video = models.ForeignKey(
+        Video, on_delete=models.CASCADE, related_name="demographics_views"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+    # '##' for global views
+    country_code = models.CharField(max_length=2)
+    age_group = models.CharField(max_length=20)
+
+    views = models.PositiveBigIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username} | {self.age_group}: {self.views}"
+
+    class Meta:
+        ordering = ["age_group"]
+        verbose_name_plural = "Demographics Views"

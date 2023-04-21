@@ -5,7 +5,6 @@ from svix.webhooks import Webhook, WebhookVerificationError
 
 from django.conf import settings
 from django.utils import timezone
-from django.core.signing import Signer, BadSignature
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -17,7 +16,6 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from rest_framework_api_key.permissions import HasAPIKey
 
 from knox.auth import TokenAuthentication
 
@@ -37,18 +35,13 @@ RESEND_TYPE = {
     "email.complained": Email.COMPLAINED,
     "email.bounced": Email.BOUNCED,
     "email.open": Email.OPENED,
-    "email.click": Email.CLICKED,
+    "email.clicked": Email.CLICKED,
 }
 
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes(
-    [
-        IsAuthenticated,
-        #   HasAPIKey
-    ]
-)
+@permission_classes([IsAuthenticated])
 def get_presigned_post_view(request):
     params = request.data.get("params", None)
     size = request.data.get("size", None)
@@ -93,7 +86,7 @@ def get_presigned_post_view(request):
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def post_email_view(request):
     to = request.data.get("to", None)
     subject = request.data.get("subject", None)
@@ -101,7 +94,10 @@ def post_email_view(request):
     chart_pngs_ids = request.data.get("chart_pngs", None)
     type = request.data.get("type", None)
 
-    if None in [html_message, to, subject, chart_pngs_ids, type]:
+    if None in [html_message, to, subject, chart_pngs_ids, type] or type not in [
+        Email.LIVE,
+        Email.TEST,
+    ]:
         return BAD_REQUEST_RESPONSE
 
     if Email.objects.filter(
@@ -139,9 +135,8 @@ def resend_webhook_view(request):
         data = wh.verify(payload, headers)
         try:
             email = Email.objects.get(message_id=data["data"]["email_id"])
-            email.type = RESEND_TYPE[data["type"]]
-            email.save(update_fields=["type"])
-            print("Email found")
+            email.status = RESEND_TYPE[data["type"]]
+            email.save(update_fields=["status"])
         except (Exception, Email.DoesNotExist) as e:
             print("ERROR", e)
         return HttpResponse(status=200)

@@ -19,4 +19,5 @@ def delete_chart_png_from_s3(sender, instance, **kwargs):
 @receiver(post_save, sender=ChartPNG)
 def create_email_chart_png(sender, instance, created, **kwargs):
     if created:
+        print("Creating new EmailChartPNG for ChartPNG: " + str(instance.id) + " ...")
         EmailChartPNG.objects.create(chart_png=instance)

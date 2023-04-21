@@ -8,7 +8,6 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from rest_framework_api_key.permissions import HasAPIKey
 
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
@@ -18,7 +17,7 @@ from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
 from proeliumx.utils import BAD_REQUEST_RESPONSE
-from yt.yt_api_utils import get_access_token, get_yt_channels_info
+from yt.yt_api_utils import get_access_token, get_yt_channels_yt_api
 from yt.instances_utils import (
     create_or_update_yt_keys,
     create_delete_update_yt_channels,
@@ -30,7 +29,7 @@ from yt.isocodes import ISO_CODES
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def check_connected_view(request):
     return JsonResponse(
         {
@@ -44,8 +43,6 @@ def check_connected_view(request):
 
 
 @api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
 def connect_yt_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
@@ -59,7 +56,7 @@ def connect_yt_view(request):
         return BAD_REQUEST_RESPONSE
     try:
         user = User.objects.get(username=google_user_info["id"])
-        yt_channels = get_yt_channels_info(access_token)
+        yt_channels = get_yt_channels_yt_api(access_token)
 
         if yt_channels is None:
             return BAD_REQUEST_RESPONSE
@@ -75,7 +72,7 @@ def connect_yt_view(request):
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def get_views_view(request):
     video_id = request.data.get("video_id", None)
     country_code = request.data.get("country_code", "##")

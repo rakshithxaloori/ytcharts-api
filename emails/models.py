@@ -33,6 +33,13 @@ class Email(models.Model):
         (LIVE, "Live"),
     )
 
+    RESEND = "r"
+    SES = "s"
+    CLIENT_CHOICES = (
+        (RESEND, "Resend"),
+        (SES, "SES"),
+    )
+
     user = models.ForeignKey(User, related_name="emails", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -48,9 +55,10 @@ class Email(models.Model):
     )  # Provided by the email service
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=QUEUED)
     type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=LIVE)
+    client = models.CharField(max_length=1, choices=CLIENT_CHOICES, default=RESEND)
 
     def __str__(self) -> str:
-        return f"{self.subject} || {self.user.email}"
+        return f"To: {self.to} || {self.user.username} || Status: {self.status}"
 
     class Meta:
         ordering = ["-created_at"]
@@ -80,9 +88,16 @@ class ChartPNG(models.Model):
 
 class EmailChartPNG(models.Model):
     email = models.ForeignKey(
-        Email, on_delete=models.CASCADE, null=True, blank=True, default=None
+        Email,
+        related_name="e_email_chart_pngs",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        default=None,
     )
-    chart_png = models.ForeignKey(ChartPNG, on_delete=models.CASCADE)
+    chart_png = models.ForeignKey(
+        ChartPNG, related_name="c_email_chart_pngs", on_delete=models.CASCADE
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

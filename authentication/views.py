@@ -9,7 +9,6 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from rest_framework_api_key.permissions import HasAPIKey
 
 from knox.auth import TokenAuthentication
 
@@ -22,7 +21,7 @@ from proeliumx.utils import BAD_REQUEST_RESPONSE, get_country_code
 
 @api_view(["GET", "POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def signout_view(request):
     # Delete auth token
     request._auth.delete()
@@ -30,7 +29,6 @@ def signout_view(request):
 
 
 @api_view(["POST"])
-# @permission_classes([HasAPIKey])
 def signin_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
@@ -67,7 +65,7 @@ def signin_view(request):
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def last_open_view(request):
     user = request.user
     user.last_open = timezone.now()

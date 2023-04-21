@@ -11,7 +11,7 @@ from proeliumx.utils import get_now_timestamp
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
-def get_daily_views(username, video_id, country=None):
+def get_day_views_yt_api(username, video_id, country=None):
     # Set the start and end dates for the report (last 3 months)
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
@@ -46,7 +46,7 @@ def get_daily_views(username, video_id, country=None):
         return None
 
 
-def get_demographics(username, channel_id, country=None):
+def get_demographics_views_yt_api(username, channel_id, country=None):
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
         "%Y-%m-%d"
@@ -116,7 +116,12 @@ def get_access_token(username):
         return None
 
 
-def get_yt_channels_info(access_token: str = None):
+##########################################################
+# Using YouTube API Key
+API_KEY = settings.GOOGLE_API_KEY
+
+
+def get_yt_channels_yt_api(access_token: str = None):
     if access_token is None:
         return None
 
@@ -131,4 +136,30 @@ def get_yt_channels_info(access_token: str = None):
         return json_data.get("items", None)
     else:
         print("get_yt_channels_info ERROR", response.status_code, response.reason)
+        return None
+
+
+def get_videos_yt_api(username, max_results=5):
+    access_token = get_access_token(username)
+    if access_token is None:
+        return None
+    uri = "https://youtube.googleapis.com/youtube/v3/search"
+    params = {
+        "part": "snippet",
+        "channelType": "any",
+        "forMine": True,
+        "maxResults": max_results,
+        "order": "date",
+        "type": "video",
+        "key": API_KEY,
+    }
+    headers = {
+        "Authorization": "Bearer {}".format(access_token),
+        "Content-Type": "application/json",
+    }
+    response = requests.get(uri, params=params, headers=headers)
+    if response.ok:
+        json_data = response.json()
+        return json_data["items"]
+    else:
         return None

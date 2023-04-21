@@ -28,10 +28,12 @@ def create_delete_update_yt_channels(user, channels):
         channel_thumbnail = channel["snippet"]["thumbnails"]["default"]["url"]
         subscriber_count = channel["statistics"]["subscriberCount"]
 
-        channel, created = Channel.objects.get_or_create(
+        Channel.objects.update_or_create(
             user=user,
             id=channel_id,
             defaults={
+                "id": channel_id,
+                "user": user,
                 "title": channel_title,
                 "thumbnail": channel_thumbnail,
                 "subscriber_count": subscriber_count,

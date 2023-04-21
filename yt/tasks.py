@@ -6,10 +6,12 @@ from proeliumx.celery import app as celery_app
 
 from yt.models import AccessKeys, Channel, Video, DailyViews, DemographicsViews
 from yt.yt_api_utils import (
+    get_yt_channels_yt_api,
     get_videos_yt_api,
     get_day_views_yt_api,
     get_demographics_views_yt_api,
 )
+from yt.instances_utils import create_delete_update_yt_channels
 
 VIDEOS_COUNT = 5
 
@@ -35,10 +37,20 @@ def fetch_daily_analytics_task():
 def fetch_latest_videos():
     for access_keys in AccessKeys.objects.all():
         username = access_keys.user.username
+        yt_channels = get_yt_channels_yt_api(access_keys.access_token)
+        create_delete_update_yt_channels(access_keys.user, yt_channels)
         videos = get_videos_yt_api(username, max_results=VIDEOS_COUNT)
         for video in videos:
-            print(video)
-            # TODO save video to db
+            Video.objects.update_or_create(
+                id=video["id"]["videoId"],
+                defaults={
+                    "id": video["id"]["videoId"],
+                    "channel_id": video["snippet"]["channelId"],
+                    "title": video["snippet"]["title"],
+                    "thumbnail": video["snippet"]["thumbnails"]["default"]["url"],
+                    "description": video["snippet"]["description"],
+                },
+            )
 
 
 def fetch_daily_views():

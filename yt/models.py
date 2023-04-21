@@ -28,8 +28,9 @@ class Video(models.Model):
     id = models.CharField(
         primary_key=True, editable=False, max_length=11, null=False, blank=False
     )
-    title = models.CharField(max_length=100, null=True, blank=True)
-    thumbnail = models.URLField(null=True, blank=True)
+    title = models.CharField(max_length=100)
+    thumbnail = models.URLField()
+    description = models.TextField()
 
     def __str__(self) -> str:
         return "{} || {}".format(self.id, self.channel.title)

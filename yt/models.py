@@ -105,12 +105,9 @@ class DemographicsViews(models.Model):
     FEMALE = "f"
     USER_UNSPECIFIED = "u"
     GENDER_CHOICES = (
-        MALE,
-        "Male",
-        FEMALE,
-        "Female",
-        USER_UNSPECIFIED,
-        "User Unspecified",
+        (MALE, "Male"),
+        (FEMALE, "Female"),
+        (USER_UNSPECIFIED, "User Unspecified"),
     )
 
     user = models.ForeignKey(

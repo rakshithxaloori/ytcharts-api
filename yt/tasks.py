@@ -108,6 +108,13 @@ def fetch_demographics_views(username=None):
                     continue
                 for row in demographics_views["rows"]:
                     if len(row) == 3:
+                        yt_gender = row[1]
+                        if yt_gender == "female":
+                            yt_gender = DemographicsViews.FEMALE
+                        elif yt_gender == "male":
+                            yt_gender = DemographicsViews.MALE
+                        else:
+                            yt_gender = DemographicsViews.USER_UNSPECIFIED
                         DemographicsViews.objects.update_or_create(
                             user=access_keys.user,
                             video=video,
@@ -118,7 +125,7 @@ def fetch_demographics_views(username=None):
                                 "video": video,
                                 "country_code": country_code,
                                 "age_group": row[0],
-                                "gender": row[1],
+                                "gender": yt_gender,
                                 "viewer_percentage": row[2],
                             },
                         )

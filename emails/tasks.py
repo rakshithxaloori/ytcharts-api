@@ -2,7 +2,7 @@ from django.utils import timezone
 
 from celery.schedules import crontab
 
-from proeliumx.celery import app as celery_app
+from getabranddeal.celery import app as celery_app
 
 from emails.models import Email, ChartPNG, EmailChartPNG
 from emails.utils import send_email

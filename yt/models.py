@@ -84,6 +84,35 @@ class DailyViews(models.Model):
 
 class DemographicsViews(models.Model):
     # X-axis - ageGroup,gender
+    AGE_13_TO_17 = "age13-17"
+    AGE_18_TO_24 = "age18-24"
+    AGE_25_TO_34 = "age25-34"
+    AGE_35_TO_44 = "age35-44"
+    AGE_45_TO_54 = "age45-54"
+    AGE_55_TO_64 = "age55-64"
+    AGE_65_PLUS = "age65-"
+    AGE_CHOICES = [
+        (AGE_13_TO_17, "13-17"),
+        (AGE_18_TO_24, "18-24"),
+        (AGE_25_TO_34, "25-34"),
+        (AGE_35_TO_44, "35-44"),
+        (AGE_45_TO_54, "45-54"),
+        (AGE_55_TO_64, "55-64"),
+        (AGE_65_PLUS, "65-"),
+    ]
+
+    MALE = "m"
+    FEMALE = "f"
+    USER_UNSPECIFIED = "u"
+    GENDER_CHOICES = (
+        MALE,
+        "Male",
+        FEMALE,
+        "Female",
+        USER_UNSPECIFIED,
+        "User Unspecified",
+    )
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="demographics_views"
     )
@@ -96,12 +125,12 @@ class DemographicsViews(models.Model):
     # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
     # '##' for global views
     country_code = models.CharField(max_length=2)
-    age_group = models.CharField(max_length=20)
-
-    views = models.PositiveBigIntegerField(default=0)
+    age_group = models.CharField(max_length=10, choices=AGE_CHOICES)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    viewer_percentage = models.FloatField()
 
     def __str__(self):
-        return f"{self.user.username} | {self.age_group}: {self.views}"
+        return f"{self.user.username} | {self.age_group}: {self.viewer_percentage}"
 
     class Meta:
         ordering = ["age_group"]

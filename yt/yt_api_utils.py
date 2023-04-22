@@ -5,13 +5,14 @@ from django.conf import settings
 from django.utils import timezone
 
 from yt.models import AccessKeys
-from proeliumx.utils import get_now_timestamp
+from getabranddeal.utils import get_now_timestamp
 
 
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
-def get_day_views_yt_api(username, video_id, country=None):
+def get_day_views_yt_api(username, video_id, country_code=None):
+    country_code = None if country_code == "##" else country_code
     # Set the start and end dates for the report (last 3 months)
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
@@ -26,8 +27,8 @@ def get_day_views_yt_api(username, video_id, country=None):
         "startDate": start_date,
         "endDate": end_date,
         "filters": f"video=={video_id}"
-        if country is None
-        else f"video=={video_id};country=={country}",
+        if country_code is None
+        else f"video=={video_id};country=={country_code}",
     }
 
     # Set the authorization header with the access token
@@ -40,27 +41,37 @@ def get_day_views_yt_api(username, video_id, country=None):
     # Parse the response and extract the view count
     if response.ok:
         data = response.json()
+        # {
+        #     "kind": "youtubeAnalytics#resultTable",
+        #     "columnHeaders": [
+        #         {"name": "day", "columnType": "DIMENSION", "dataType": "STRING"},
+        #         {"name": "views", "columnType": "METRIC", "dataType": "INTEGER"},
+        #     ],
+        #     "rows": [["2023-03-11", 1]],
+        # }
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
         return None
 
 
-def get_demographics_views_yt_api(username, channel_id, country=None):
+def get_demographics_views_yt_api(username, video_id, country_code=None):
+    country_code = None if country_code == "##" else country_code
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
         "%Y-%m-%d"
     )
     params = {
-        "ids": f"channel=={channel_id}",
+        "ids": "channel==MINE",
         "metrics": "viewerPercentage",
         "dimensions": "ageGroup,gender",
         "startDate": start_date,
         "endDate": end_date,
         "sort": "gender,ageGroup",
+        "filters": f"video=={video_id}"
+        if country_code is None
+        else f"video=={video_id};country=={country_code}",
     }
-    if country is not None:
-        params["filters"] = f"country=={country}"
 
     # Set the headers with the access_token
     access_token = get_access_token(username)
@@ -70,6 +81,19 @@ def get_demographics_views_yt_api(username, channel_id, country=None):
     response = requests.get(yt_reports_endpoint, params=params, headers=headers)
     if response.ok:
         data = response.json()
+        # {
+        #     "kind": "youtubeAnalytics#resultTable",
+        #     "columnHeaders": [
+        #         {"name": "ageGroup", "columnType": "DIMENSION", "dataType": "STRING"},
+        #         {"name": "gender", "columnType": "DIMENSION", "dataType": "STRING"},
+        #         {
+        #             "name": "viewerPercentage",
+        #             "columnType": "METRIC",
+        #             "dataType": "FLOAT",
+        #         },
+        #     ],
+        #     "rows": [],
+        # }
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")

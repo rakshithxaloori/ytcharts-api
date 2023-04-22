@@ -20,13 +20,14 @@ from rest_framework.decorators import (
 from knox.auth import TokenAuthentication
 
 
-from proeliumx.utils import BAD_REQUEST_RESPONSE
+from getabranddeal.utils import BAD_REQUEST_RESPONSE
 from emails.tasks import send_email_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
 from emails.utils import get_cdn_url
 
 
+CREATOR_MAIL_DOMAIN = settings.CREATOR_MAIL_DOMAIN
 RESEND_WEBHOOK_SIGNING_KEY = settings.RESEND_WEBHOOK_SIGNING_KEY
 RESEND_TYPE = {
     "email.sent": Email.SENT,
@@ -113,7 +114,7 @@ def post_email_view(request):
         to=to,
         subject=subject,
         html_message=html_message,
-        sender=request.user.username + "@creators.proeliumx.com",
+        sender=request.user.username + f"@{CREATOR_MAIL_DOMAIN}",
         reply_to=request.user.email,
         type=type,
     )

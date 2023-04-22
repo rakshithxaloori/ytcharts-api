@@ -16,7 +16,7 @@ from knox.auth import TokenAuthentication
 from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
-from proeliumx.utils import BAD_REQUEST_RESPONSE, get_country_code
+from getabranddeal.utils import BAD_REQUEST_RESPONSE, get_country_code
 
 
 @api_view(["GET", "POST"])

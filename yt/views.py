@@ -16,7 +16,7 @@ from knox.models import AuthToken
 from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
-from proeliumx.utils import BAD_REQUEST_RESPONSE
+from getabranddeal.utils import BAD_REQUEST_RESPONSE
 from yt.yt_api_utils import get_access_token, get_yt_channels_yt_api
 from yt.instances_utils import (
     create_or_update_yt_keys,
@@ -25,6 +25,7 @@ from yt.instances_utils import (
 from yt.models import DailyViews
 from yt.serializers import DailyViewsSerializer
 from yt.isocodes import ISO_CODES
+from yt.tasks import fetch_daily_analytics_task
 
 
 @api_view(["GET"])
@@ -65,6 +66,7 @@ def connect_yt_view(request):
         create_delete_update_yt_channels(user, yt_channels)
 
         AuthToken.objects.filter(user=user).delete()
+        fetch_daily_analytics_task.delay(user.username)
         return token_response(user)
     except User.DoesNotExist:
         return BAD_REQUEST_RESPONSE

@@ -1,7 +1,7 @@
 from celery.schedules import crontab
 
 
-from proeliumx.celery import app as celery_app
+from getabranddeal.celery import app as celery_app
 
 
 from yt.models import AccessKeys, Channel, Video, DailyViews, DemographicsViews
@@ -27,15 +27,21 @@ def setup_periodic_tasks(sender, **kwargs):
 
 
 @celery_app.task
-def fetch_daily_analytics_task():
+def fetch_daily_analytics_task(username=None):
     # Fetch all recent videos
+    fetch_latest_videos(username)
     # Fetch daily views with top countries of the latest 5 videos
+    fetch_daily_views.delay(username)
     # Fetch demographics with top countries of the latest 5 videos
-    pass
+    fetch_demographics_views.delay(username)
 
 
-def fetch_latest_videos():
-    for access_keys in AccessKeys.objects.all():
+def fetch_latest_videos(username=None):
+    if username is None:
+        access_keys_list = AccessKeys.objects.all()
+    else:
+        access_keys_list = AccessKeys.objects.filter(user__username=username)
+    for access_keys in access_keys_list:
         username = access_keys.user.username
         yt_channels = get_yt_channels_yt_api(access_keys.access_token)
         create_delete_update_yt_channels(access_keys.user, yt_channels)
@@ -53,23 +59,108 @@ def fetch_latest_videos():
             )
 
 
-def fetch_daily_views():
-    for access_keys in AccessKeys.objects.all():
+@celery_app.task
+def fetch_daily_views(username=None):
+    if username is None:
+        access_keys_list = AccessKeys.objects.all()
+    else:
+        access_keys_list = AccessKeys.objects.filter(user__username=username)
+    for access_keys in access_keys_list:
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
-                video_id = video.video_id
-                day_views = get_day_views_yt_api(username, video_id, country=None)
-                print(day_views)
+                # TODO country_code
+                country_code = "##"
+                day_views = get_day_views_yt_api(username, video.id, country_code)
+                if "rows" not in day_views:
+                    continue
+                for row in day_views["rows"]:
+                    if len(row) == 2:
+                        DailyViews.objects.update_or_create(
+                            user=access_keys.user,
+                            video=video,
+                            country_code=country_code,
+                            date=row[0],
+                            defaults={
+                                "user": access_keys.user,
+                                "video": video,
+                                "date": country_code,
+                                "views": row[1],
+                            },
+                        )
 
 
-def fetch_demographics_views():
-    for access_keys in AccessKeys.objects.all():
+@celery_app.task
+def fetch_demographics_views(username=None):
+    if username is None:
+        access_keys_list = AccessKeys.objects.all()
+    else:
+        access_keys_list = AccessKeys.objects.filter(user__username=username)
+    for access_keys in access_keys_list:
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
-                video_id = video.video_id
+                country_code = "##"
                 demographics_views = get_demographics_views_yt_api(
-                    username, video_id, country=None
+                    username, video.id, country_code
                 )
-                print(demographics_views)
+                if "rows" not in demographics_views:
+                    continue
+                for row in demographics_views["rows"]:
+                    if len(row) == 3:
+                        DemographicsViews.objects.update_or_create(
+                            user=access_keys.user,
+                            video=video,
+                            country_code=country_code,
+                            age_group=row[0],
+                            defaults={
+                                "user": access_keys.user,
+                                "video": video,
+                                "country_code": country_code,
+                                "age_group": row[0],
+                                "gender": row[1],
+                                "viewer_percentage": row[2],
+                            },
+                        )
+
+
+# print(day_views)
+# {
+#     "kind": "youtubeAnalytics#resultTable",
+#     "columnHeaders": [
+#         {
+#             "name": "day",
+#             "columnType": "DIMENSION",
+#             "dataType": "STRING",
+#         },
+#         {
+#             "name": "views",
+#             "columnType": "METRIC",
+#             "dataType": "INTEGER",
+#         },
+#     ],
+#     "rows": [["2023-03-11", 1]],
+# }
+
+# print(demographics_views)
+# {
+#     "kind": "youtubeAnalytics#resultTable",
+#     "columnHeaders": [
+#         {
+#             "name": "ageGroup",
+#             "columnType": "DIMENSION",
+#             "dataType": "STRING",
+#         },
+#         {
+#             "name": "gender",
+#             "columnType": "DIMENSION",
+#             "dataType": "STRING",
+#         },
+#         {
+#             "name": "viewerPercentage",
+#             "columnType": "METRIC",
+#             "dataType": "FLOAT",
+#         },
+#     ],
+#     "rows": [],
+# }

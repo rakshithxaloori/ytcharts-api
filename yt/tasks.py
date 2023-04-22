@@ -30,9 +30,9 @@ def setup_periodic_tasks(sender, **kwargs):
 def fetch_daily_analytics_task(username=None):
     # Fetch all recent videos
     fetch_latest_videos(username)
-    # Fetch daily views with top countries of the latest 5 videos
+    # Fetch daily views with top countries
     fetch_daily_views.delay(username)
-    # Fetch demographics with top countries of the latest 5 videos
+    # Fetch demographics with top countries
     fetch_demographics_views.delay(username)
 
 
@@ -100,6 +100,7 @@ def fetch_demographics_views(username=None):
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
+                # TODO country_code
                 country_code = "##"
                 demographics_views = get_demographics_viewer_perc_yt_api(
                     username, video.id, country_code
@@ -129,45 +130,3 @@ def fetch_demographics_views(username=None):
                                 "viewer_percentage": row[2],
                             },
                         )
-
-
-# print(day_views)
-# {
-#     "kind": "youtubeAnalytics#resultTable",
-#     "columnHeaders": [
-#         {
-#             "name": "day",
-#             "columnType": "DIMENSION",
-#             "dataType": "STRING",
-#         },
-#         {
-#             "name": "views",
-#             "columnType": "METRIC",
-#             "dataType": "INTEGER",
-#         },
-#     ],
-#     "rows": [["2023-03-11", 1]],
-# }
-
-# print(demographics_views)
-# {
-#     "kind": "youtubeAnalytics#resultTable",
-#     "columnHeaders": [
-#         {
-#             "name": "ageGroup",
-#             "columnType": "DIMENSION",
-#             "dataType": "STRING",
-#         },
-#         {
-#             "name": "gender",
-#             "columnType": "DIMENSION",
-#             "dataType": "STRING",
-#         },
-#         {
-#             "name": "viewerPercentage",
-#             "columnType": "METRIC",
-#             "dataType": "FLOAT",
-#         },
-#     ],
-#     "rows": [],
-# }

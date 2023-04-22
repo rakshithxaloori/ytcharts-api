@@ -13,6 +13,8 @@ BAD_REQUEST_RESPONSE = JsonResponse(
     {"detail": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST
 )
 
+TESTING_ACCOUNTS = ["118045026297312510413"]
+
 
 def get_ip_address(http_forwarded_for, remote_addr):
     x_forwarded_for = http_forwarded_for

@@ -9,7 +9,7 @@ from yt.yt_api_utils import (
     get_yt_channels_yt_api,
     get_videos_yt_api,
     get_day_views_yt_api,
-    get_demographics_views_yt_api,
+    get_demographics_viewer_perc_yt_api,
 )
 from yt.instances_utils import create_delete_update_yt_channels
 
@@ -101,7 +101,7 @@ def fetch_demographics_views(username=None):
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
                 country_code = "##"
-                demographics_views = get_demographics_views_yt_api(
+                demographics_views = get_demographics_viewer_perc_yt_api(
                     username, video.id, country_code
                 )
                 if "rows" not in demographics_views:

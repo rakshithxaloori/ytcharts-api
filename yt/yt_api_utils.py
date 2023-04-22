@@ -5,13 +5,19 @@ from django.conf import settings
 from django.utils import timezone
 
 from yt.models import AccessKeys
-from getabranddeal.utils import get_now_timestamp
+from yt.test_utils import (
+    test_get_day_views_yt_api,
+    test_get_demographics_viewer_perc_yt_api,
+)
+from getabranddeal.utils import get_now_timestamp, TESTING_ACCOUNTS
 
 
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
 def get_day_views_yt_api(username, video_id, country_code=None):
+    if username in TESTING_ACCOUNTS:
+        return test_get_day_views_yt_api()
     country_code = None if country_code == "##" else country_code
     # Set the start and end dates for the report (last 3 months)
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -41,21 +47,15 @@ def get_day_views_yt_api(username, video_id, country_code=None):
     # Parse the response and extract the view count
     if response.ok:
         data = response.json()
-        # {
-        #     "kind": "youtubeAnalytics#resultTable",
-        #     "columnHeaders": [
-        #         {"name": "day", "columnType": "DIMENSION", "dataType": "STRING"},
-        #         {"name": "views", "columnType": "METRIC", "dataType": "INTEGER"},
-        #     ],
-        #     "rows": [["2023-03-11", 1]],
-        # }
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
         return None
 
 
-def get_demographics_views_yt_api(username, video_id, country_code=None):
+def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
+    if username in TESTING_ACCOUNTS:
+        return test_get_demographics_viewer_perc_yt_api()
     country_code = None if country_code == "##" else country_code
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
@@ -81,19 +81,6 @@ def get_demographics_views_yt_api(username, video_id, country_code=None):
     response = requests.get(yt_reports_endpoint, params=params, headers=headers)
     if response.ok:
         data = response.json()
-        # {
-        #     "kind": "youtubeAnalytics#resultTable",
-        #     "columnHeaders": [
-        #         {"name": "ageGroup", "columnType": "DIMENSION", "dataType": "STRING"},
-        #         {"name": "gender", "columnType": "DIMENSION", "dataType": "STRING"},
-        #         {
-        #             "name": "viewerPercentage",
-        #             "columnType": "METRIC",
-        #             "dataType": "FLOAT",
-        #         },
-        #     ],
-        #     "rows": [],
-        # }
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")

@@ -1,5 +1,3 @@
-from django.utils import timezone
-
 from celery.schedules import crontab
 
 from getabranddeal.celery import app as celery_app
@@ -37,13 +35,16 @@ def send_email_task(email_pk, client=Email.RESEND):
             email.status = Email.SENT
             email.client = client
             email.save(update_fields=["message_id", "status", "client"])
-    except Email.DoesNotExist:
-        pass
+    except (Exception, Email.DoesNotExist) as e:
+        print("send_email_task ERROR:", e)
 
 
 @celery_app.task
 def delete_orphaned_chart_pngs_task():
     chart_png_ids = EmailChartPNG.objects.filter(
-        email=None, created_at__lt=timezone.now() - timezone.timedelta(hours=2)
+        email=None,
+        # created_at__lt=timezone.now() - timezone.timedelta(hours=2)
     ).values_list("chart_png__id", flat=True)
+    chart_png_ids = ChartPNG.objects.all()
+    print("HELLO", chart_png_ids)
     ChartPNG.objects.filter(id__in=chart_png_ids).delete()

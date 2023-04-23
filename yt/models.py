@@ -1,12 +1,15 @@
 import uuid
+
 from django.db import models
+from django.utils import timezone
+
 
 from authentication.models import User
 
 
 class Channel(models.Model):
     user = models.ForeignKey(User, related_name="channels", on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.CharField(primary_key=True, max_length=24, blank=False, null=False)
     title = models.CharField(max_length=255, null=False, blank=False)
@@ -23,7 +26,7 @@ class Video(models.Model):
     channel = models.ForeignKey(
         Channel, related_name="videos", on_delete=models.CASCADE
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.CharField(
         primary_key=True, editable=False, max_length=11, null=False, blank=False
@@ -38,7 +41,7 @@ class Video(models.Model):
 
 class AccessKeys(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="access_keys")
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     access_token = models.CharField(max_length=2048)
@@ -65,7 +68,7 @@ class DailyViews(models.Model):
     video = models.ForeignKey(
         Video, on_delete=models.CASCADE, related_name="daily_views"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField()
@@ -116,7 +119,7 @@ class DemographicsViews(models.Model):
     video = models.ForeignKey(
         Video, on_delete=models.CASCADE, related_name="demographics_views"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2

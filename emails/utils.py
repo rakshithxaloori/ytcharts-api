@@ -7,15 +7,8 @@ from django.conf import settings
 
 from emails.models import Email
 
-ses_client = boto3.client(
-    service_name="ses",
-    aws_access_key_id=settings.AWS_SES_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SES_SECRET_ACCESS_KEY,
-    region_name=settings.AWS_SES_REGION_NAME,
-)
 
-
-def send_email(to, subject, html_message, sender, reply_to, client=Email.SES):
+def send_email(to, subject, html_message, sender, reply_to, client=Email.RESEND):
     if client == Email.RESEND:
         api_key = settings.RESEND_API_KEY
         endpoint = "https://api.resend.com/email"
@@ -41,6 +34,12 @@ def send_email(to, subject, html_message, sender, reply_to, client=Email.SES):
             return None
     elif client == Email.SES:
         try:
+            ses_client = boto3.client(
+                service_name="ses",
+                aws_access_key_id=settings.AWS_SES_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SES_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_SES_REGION_NAME,
+            )
             response = ses_client.send_email(
                 Source=sender,
                 Destination={

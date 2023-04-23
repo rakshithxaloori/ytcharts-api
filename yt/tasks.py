@@ -3,7 +3,6 @@ from celery.schedules import crontab
 
 from getabranddeal.celery import app as celery_app
 
-
 from yt.models import AccessKeys, Channel, Video, DailyViews, DemographicsViews
 from yt.yt_api_utils import (
     get_yt_channels_yt_api,
@@ -30,6 +29,7 @@ def setup_periodic_tasks(sender, **kwargs):
 def fetch_daily_analytics_task(username=None):
     # Fetch all recent videos
     fetch_latest_videos(username)
+    return
     # Fetch daily views with top countries
     fetch_daily_views.delay(username)
     # Fetch demographics with top countries

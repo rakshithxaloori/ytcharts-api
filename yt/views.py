@@ -17,12 +17,8 @@ from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
 from getabranddeal.utils import BAD_REQUEST_RESPONSE
-from yt.yt_api_utils import get_access_token, get_yt_channels_yt_api
-from yt.instances_utils import (
-    create_or_update_yt_keys,
-    create_delete_update_yt_channels,
-)
-from yt.models import DailyViews
+from yt.yt_api_utils import get_access_token
+from yt.models import AccessKeys, Video, DailyViews
 from yt.serializers import DailyViewsSerializer
 from yt.isocodes import ISO_CODES
 from yt.tasks import fetch_daily_analytics_task
@@ -57,15 +53,18 @@ def connect_yt_view(request):
         return BAD_REQUEST_RESPONSE
     try:
         user = User.objects.get(username=google_user_info["id"])
-        yt_channels = get_yt_channels_yt_api(access_token)
-
-        if yt_channels is None:
-            return BAD_REQUEST_RESPONSE
-
-        create_or_update_yt_keys(user, access_token, refresh_token, expires_at)
-        create_delete_update_yt_channels(user, yt_channels)
+        AccessKeys.objects.update_or_create(
+            user=user,
+            defaults={
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expires_at": expires_at,
+                "is_refresh_valid": True,
+            },
+        )
 
         AuthToken.objects.filter(user=user).delete()
+
         fetch_daily_analytics_task.delay(user.username)
         return token_response(user)
     except User.DoesNotExist:
@@ -78,15 +77,21 @@ def connect_yt_view(request):
 def get_views_view(request):
     video_id = request.data.get("video_id", None)
     country_code = request.data.get("country_code", "##")
-    num_days = request.data.get("num_days", 30)
+    # num_days = request.data.get("num_days", 30)
+    num_days = 30
 
     if country_code != "##" and country_code not in ISO_CODES.keys():
         return BAD_REQUEST_RESPONSE
+    user = request.user
+    try:
+        video = Video.objects.get(user=user, video_id=video_id)
+    except Video.DoesNotExist:
+        video = user.videos.order_by("-published_at").first()
     daily_views = DailyViews.objects.filter(
-        video__id=video_id, country_code=country_code
+        video=video, country_code=country_code
     ).order_by("-date")[:num_days]
     daily_views_data = DailyViewsSerializer(daily_views, many=True).data
     return JsonResponse(
-        {"detail": "Daily views", "payload": daily_views_data},
+        {"detail": "Daily views", "payload": {"video": {}, "data": daily_views_data}},
         status=status.HTTP_200_OK,
     )

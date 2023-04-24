@@ -11,32 +11,35 @@ class Channel(models.Model):
     user = models.ForeignKey(User, related_name="channels", on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
 
-    id = models.CharField(primary_key=True, max_length=24, blank=False, null=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    channel_id = models.CharField(max_length=24)
     title = models.CharField(max_length=255, null=False, blank=False)
     thumbnail = models.URLField(null=False, blank=False)
     subscriber_count = models.PositiveIntegerField(null=False, blank=False, default=0)
 
     def __str__(self) -> str:
-        return "{} || {} subscribers || {}".format(
-            self.title, self.subscriber_count, self.user.email
-        )
+        return f"{self.title} | {self.subscriber_count} subscribers | {self.user.email}"
 
 
 class Video(models.Model):
+    user = models.ForeignKey(User, related_name="videos", on_delete=models.CASCADE)
     channel = models.ForeignKey(
         Channel, related_name="videos", on_delete=models.CASCADE
     )
     created_at = models.DateTimeField(default=timezone.now)
 
-    id = models.CharField(
-        primary_key=True, editable=False, max_length=11, null=False, blank=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    video_id = models.CharField(max_length=11)
     title = models.CharField(max_length=100)
     thumbnail = models.URLField()
     description = models.TextField()
+    published_at = models.DateTimeField()
 
     def __str__(self) -> str:
-        return "{} || {}".format(self.id, self.channel.title)
+        return f"{self.title} | {self.published_at} | {self.user.username}"
+
+    class Meta:
+        ordering = ["-published_at"]
 
 
 class AccessKeys(models.Model):
@@ -45,7 +48,7 @@ class AccessKeys(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     access_token = models.CharField(max_length=2048)
-    valid_till = models.PositiveIntegerField()
+    expires_at = models.PositiveIntegerField()
     refresh_token = models.CharField(max_length=512)
     is_refresh_valid = models.BooleanField(default=True)
 
@@ -78,10 +81,10 @@ class DailyViews(models.Model):
     views = models.PositiveBigIntegerField(default=0)
 
     def __str__(self):
-        return f"{self.user.username} | {self.date}: {self.views}"
+        return f"{self.video.video_id} {self.user.username} | {self.date}: {self.views}"
 
     class Meta:
-        ordering = ["date"]
+        ordering = ["video__published_at", "date"]
         verbose_name_plural = "Daily Views"
 
 
@@ -114,10 +117,10 @@ class DemographicsViews(models.Model):
     )
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="demographics_views"
+        User, on_delete=models.CASCADE, related_name="demographics_viewer_percentage"
     )
     video = models.ForeignKey(
-        Video, on_delete=models.CASCADE, related_name="demographics_views"
+        Video, on_delete=models.CASCADE, related_name="demographics_viewer_percentage"
     )
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -130,8 +133,8 @@ class DemographicsViews(models.Model):
     viewer_percentage = models.FloatField()
 
     def __str__(self):
-        return f"{self.user.username} | {self.age_group}: {self.viewer_percentage}"
+        return f"{self.video.video_id} {self.user.username} | {self.age_group} {self.gender}: {self.viewer_percentage: .2f}%"
 
     class Meta:
-        ordering = ["age_group"]
+        ordering = ["video__published_at", "age_group", "gender"]
         verbose_name_plural = "Demographics Views"

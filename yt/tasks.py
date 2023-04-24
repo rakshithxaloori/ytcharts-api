@@ -10,7 +10,6 @@ from yt.yt_api_utils import (
     get_day_views_yt_api,
     get_demographics_viewer_perc_yt_api,
 )
-from yt.instances_utils import create_delete_update_yt_channels
 
 VIDEOS_COUNT = 5
 
@@ -27,13 +26,42 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @celery_app.task
 def fetch_daily_analytics_task(username=None):
+    # Update channels
+    update_channels(username)
     # Fetch all recent videos
     fetch_latest_videos(username)
-    return
     # Fetch daily views with top countries
     fetch_daily_views.delay(username)
     # Fetch demographics with top countries
     fetch_demographics_views.delay(username)
+
+
+def update_channels(username=None):
+    if username is None:
+        access_keys_list = AccessKeys.objects.all()
+    else:
+        access_keys_list = AccessKeys.objects.filter(user__username=username)
+    for access_keys in access_keys_list:
+        user = access_keys.user
+        yt_channels = get_yt_channels_yt_api(access_keys.access_token)
+        new_channel_ids = [yt_ch["id"] for yt_ch in yt_channels]
+
+    # Delete
+    for channel in Channel.objects.filter(user=user):
+        if channel.channel_id not in new_channel_ids:
+            channel.delete()
+
+    # Create or update
+    for yt_channel in yt_channels:
+        Channel.objects.update_or_create(
+            user=user,
+            channel_id=yt_channel["id"],
+            defaults={
+                "title": yt_channel["snippet"]["title"],
+                "thumbnail": yt_channel["snippet"]["thumbnails"]["default"]["url"],
+                "subscriber_count": yt_channel["statistics"]["subscriberCount"],
+            },
+        )
 
 
 def fetch_latest_videos(username=None):
@@ -43,18 +71,18 @@ def fetch_latest_videos(username=None):
         access_keys_list = AccessKeys.objects.filter(user__username=username)
     for access_keys in access_keys_list:
         username = access_keys.user.username
-        yt_channels = get_yt_channels_yt_api(access_keys.access_token)
-        create_delete_update_yt_channels(access_keys.user, yt_channels)
         videos = get_videos_yt_api(username, max_results=VIDEOS_COUNT)
         for video in videos:
+            channel = Channel.objects.get(channel_id=video["snippet"]["channelId"])
             Video.objects.update_or_create(
-                id=video["id"]["videoId"],
+                user=access_keys.user,
+                video_id=video["id"]["videoId"],
+                channel=channel,
                 defaults={
-                    "id": video["id"]["videoId"],
-                    "channel_id": video["snippet"]["channelId"],
                     "title": video["snippet"]["title"],
                     "thumbnail": video["snippet"]["thumbnails"]["default"]["url"],
                     "description": video["snippet"]["description"],
+                    "published_at": video["snippet"]["publishedAt"],
                 },
             )
 
@@ -68,7 +96,7 @@ def fetch_daily_views(username=None):
     for access_keys in access_keys_list:
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
-            for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
+            for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
                 # TODO country_code
                 country_code = "##"
                 day_views = get_day_views_yt_api(username, video.id, country_code)
@@ -81,12 +109,7 @@ def fetch_daily_views(username=None):
                             video=video,
                             country_code=country_code,
                             date=row[0],
-                            defaults={
-                                "user": access_keys.user,
-                                "video": video,
-                                "date": country_code,
-                                "views": row[1],
-                            },
+                            defaults={"views": row[1]},
                         )
 
 
@@ -99,7 +122,7 @@ def fetch_demographics_views(username=None):
     for access_keys in access_keys_list:
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
-            for video in channel.videos.order_by("-created_at")[:VIDEOS_COUNT]:
+            for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
                 # TODO country_code
                 country_code = "##"
                 demographics_views = get_demographics_viewer_perc_yt_api(
@@ -121,12 +144,6 @@ def fetch_demographics_views(username=None):
                             video=video,
                             country_code=country_code,
                             age_group=row[0],
-                            defaults={
-                                "user": access_keys.user,
-                                "video": video,
-                                "country_code": country_code,
-                                "age_group": row[0],
-                                "gender": yt_gender,
-                                "viewer_percentage": row[2],
-                            },
+                            gender=yt_gender,
+                            defaults={"viewer_percentage": row[2]},
                         )

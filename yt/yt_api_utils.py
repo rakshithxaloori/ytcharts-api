@@ -94,7 +94,7 @@ def get_access_token(username):
         # Check access token expiry
         yt_keys = AccessKeys.objects.get(user__username=username, is_refresh_valid=True)
         timestamp_now = get_now_timestamp()
-        if timestamp_now < yt_keys.valid_till:
+        if timestamp_now < yt_keys.expires_at:
             return yt_keys.access_token
         else:
             # Refresh access token
@@ -112,10 +112,10 @@ def get_access_token(username):
                 access_token = json_data["access_token"]
                 expires_in = json_data["expires_in"]
                 yt_keys.access_token = access_token
-                yt_keys.valid_till = (
+                yt_keys.expires_at = (
                     timezone.now() + timezone.timedelta(seconds=expires_in)
                 ).timestamp()
-                yt_keys.save(update_fields=["access_token", "valid_till"])
+                yt_keys.save(update_fields=["access_token", "expires_at"])
                 return access_token
             else:
                 print("Refresh Token expired")

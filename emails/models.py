@@ -60,7 +60,7 @@ class Email(models.Model):
     client = models.CharField(max_length=1, choices=CLIENT_CHOICES, default=RESEND)
 
     def __str__(self) -> str:
-        return f"To: {self.to} || {self.user.username} || Status: {self.status}"
+        return f"To: {self.to} | {self.user.username} | Status: {self.status}"
 
     class Meta:
         ordering = ["-created_at"]
@@ -81,7 +81,7 @@ class ChartPNG(models.Model):
     params = models.JSONField()
 
     def __str__(self) -> str:
-        return f"{self.path} || {self.user.email}"
+        return f"{self.path} | {self.user.email}"
 
     class Meta:
         ordering = ["-created_at"]
@@ -105,7 +105,7 @@ class EmailChartPNG(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     def __str__(self) -> str:
-        return f"{self.email} || {self.chart_png}"
+        return f"{self.email} | {self.chart_png}"
 
     class Meta:
         unique_together = ("email", "chart_png")

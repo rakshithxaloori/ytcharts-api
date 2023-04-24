@@ -7,6 +7,7 @@ from yt.models import AccessKeys, Channel, Video, DailyViews, DemographicsViews
 from yt.yt_api_utils import (
     get_yt_channels_yt_api,
     get_videos_yt_api,
+    get_top_countries_yt_api,
     get_day_views_yt_api,
     get_demographics_viewer_perc_yt_api,
 )
@@ -85,6 +86,44 @@ def fetch_latest_videos(username=None):
                     "published_at": video["snippet"]["publishedAt"],
                 },
             )
+
+
+def fetch_top_countries(username=None):
+    if username is None:
+        access_keys_list = AccessKeys.objects.all()
+    else:
+        access_keys_list = AccessKeys.objects.filter(user__username=username)
+    for access_keys in access_keys_list:
+        username = access_keys.user.username
+        top_countries = get_top_countries_yt_api(username)
+        # {
+        #     "kind": "youtubeAnalytics#resultTable",
+        #     "columnHeaders": [
+        #         {"name": "country", "columnType": "DIMENSION", "dataType": "STRING"},
+        #         {"name": "views", "columnType": "METRIC", "dataType": "INTEGER"},
+        #         {
+        #             "name": "estimatedMinutesWatched",
+        #             "columnType": "METRIC",
+        #             "dataType": "INTEGER",
+        #         },
+        #         {
+        #             "name": "averageViewDuration",
+        #             "columnType": "METRIC",
+        #             "dataType": "INTEGER",
+        #         },
+        #         {
+        #             "name": "averageViewPercentage",
+        #             "columnType": "METRIC",
+        #             "dataType": "FLOAT",
+        #         },
+        #         {
+        #             "name": "subscribersGained",
+        #             "columnType": "METRIC",
+        #             "dataType": "INTEGER",
+        #         },
+        #     ],
+        #     "rows": [["IN", 13, 3, 13, 3.5699999999999994, 0]],
+        # }
 
 
 @celery_app.task

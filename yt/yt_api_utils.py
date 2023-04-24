@@ -15,6 +15,36 @@ from getabranddeal.utils import get_now_timestamp, TESTING_ACCOUNTS
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
+def get_top_countries_yt_api(username):
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
+        "%Y-%m-%d"
+    )
+    params = {
+        "ids": "channel==MINE",
+        "metrics": "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained",
+        "dimensions": "country",
+        "sort": "-estimatedMinutesWatched",
+        "startDate": start_date,
+        "endDate": end_date,
+    }
+
+    access_token = get_access_token(username)
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+
+    response = requests.get(yt_reports_endpoint, params=params, headers=headers)
+
+    # Parse the response and extract the view count
+    if response.ok:
+        data = response.json()
+        return data
+    else:
+        print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        return None
+
+
 def get_day_views_yt_api(username, video_id, country_code=None):
     if username in TESTING_ACCOUNTS:
         return test_get_day_views_yt_api()

@@ -1,7 +1,13 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
-from yt.models import DailyViews
+from yt.models import Video, DailyViews
+
+
+class VideoSerializer(ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ["video_id", "title", "thumbnail", "published_at"]
 
 
 class DailyViewsSerializer(ModelSerializer):

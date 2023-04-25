@@ -20,12 +20,13 @@ from rest_framework.decorators import (
 from knox.auth import TokenAuthentication
 
 
-from getabranddeal.utils import BAD_REQUEST_RESPONSE
+from getabranddeal.utils import BAD_REQUEST_RESPONSE, get_serializer_first_error
 from emails.tasks import send_email_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
 from emails.utils import get_cdn_url
 from emails.serializers import (
+    EmailValidSerializer,
     SettingsSerializer,
     EmailShortSerializer,
     EmailLongSerializer,
@@ -158,19 +159,31 @@ def post_email_view(request):
     chart_pngs_ids = request.data.get("chart_pngs", None)
     type = request.data.get("type", None)
 
-    if None in [
-        html_message,
-        plain_message,
-        to,
-        subject,
-        chart_pngs_ids,
-        type,
-    ] or type not in [
-        Email.LIVE,
-        Email.TEST,
-    ]:
-        return BAD_REQUEST_RESPONSE
+    if type == Email.TEST:
+        to = request.user.email
 
+    serializer = EmailValidSerializer(
+        data={
+            "user": request.user.id,
+            "to": to,
+            "subject": subject,
+            "html_message": html_message,
+            "plain_message": plain_message,
+            "sender": request.user.username + f"@{CREATOR_MAIL_DOMAIN}",
+            "reply_to": request.user.email,
+            "type": type,
+        }
+    )
+
+    if not serializer.is_valid():
+        return JsonResponse(
+            {
+                "detail": get_serializer_first_error(serializer.errors),
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    # TODO Use serializer.save() instead of creating email manually
     if Email.objects.filter(
         to=to, created_at__gt=timezone.now() - timezone.timedelta(days=7)
     ).exists():

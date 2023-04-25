@@ -37,3 +37,10 @@ def get_country_code(http_forwarded_for, remote_addr):
 
 def get_now_timestamp():
     return int(timezone.now().timestamp())
+
+
+def get_serializer_first_error(errors):
+    errors_dict = dict(errors)
+    return (
+        f"{list(errors_dict.keys())[0]}: {errors_dict[list(errors_dict.keys())[0]][0]}"
+    )

@@ -25,6 +25,7 @@ from emails.tasks import send_email_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
 from emails.utils import get_cdn_url
+from emails.serializers import EmailShortSerializer, EmailLongSerializer
 
 
 CREATOR_MAIL_DOMAIN = settings.CREATOR_MAIL_DOMAIN
@@ -38,6 +39,47 @@ RESEND_TYPE = {
     "email.open": Email.OPENED,
     "email.clicked": Email.CLICKED,
 }
+
+GET_EMAILS_COUNT = 20
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_emails_view(request):
+    page = request.data.get("page", 0)
+    emails = Email.objects.filter(user=request.user).order_by("-created_at")[
+        (page * GET_EMAILS_COUNT) : ((page + 1) * GET_EMAILS_COUNT)
+    ]
+    emails_data = EmailShortSerializer(emails, many=True).data
+    return JsonResponse(
+        {
+            "detail": "Emails retrieved successfully",
+            "payload": {"emails": emails_data},
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_email_view(request):
+    email_id = request.data.get("email_id", None)
+    if email_id is None:
+        return BAD_REQUEST_RESPONSE
+    try:
+        email = Email.objects.get(id=email_id, user=request.user)
+    except Email.DoesNotExist:
+        return BAD_REQUEST_RESPONSE
+    email_data = EmailLongSerializer(email).data
+    return JsonResponse(
+        {
+            "detail": "Email retrieved successfully",
+            "payload": {"email": email_data},
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["POST"])
@@ -93,10 +135,18 @@ def post_email_view(request):
     to = request.data.get("to", None)
     subject = request.data.get("subject", None)
     html_message = request.data.get("html_message", None)
+    plain_message = request.data.get("plain_message", None)
     chart_pngs_ids = request.data.get("chart_pngs", None)
     type = request.data.get("type", None)
 
-    if None in [html_message, to, subject, chart_pngs_ids, type] or type not in [
+    if None in [
+        html_message,
+        plain_message,
+        to,
+        subject,
+        chart_pngs_ids,
+        type,
+    ] or type not in [
         Email.LIVE,
         Email.TEST,
     ]:
@@ -115,6 +165,7 @@ def post_email_view(request):
         to=to,
         subject=subject,
         html_message=html_message,
+        plain_message=plain_message,
         sender=request.user.username + f"@{CREATOR_MAIL_DOMAIN}",
         reply_to=request.user.email,
         type=type,

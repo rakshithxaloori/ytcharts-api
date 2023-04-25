@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from celery.schedules import crontab
 
 from getabranddeal.celery import app as celery_app
@@ -27,6 +29,7 @@ def send_email_task(email_pk, client=Email.RESEND):
                 to=email.to,
                 subject=email.subject,
                 html_message=email.html_message,
+                plain_message=email.plain_message,
                 sender=email.sender,
                 reply_to=email.reply_to,
                 client=client,
@@ -41,10 +44,15 @@ def send_email_task(email_pk, client=Email.RESEND):
 
 @celery_app.task
 def delete_orphaned_chart_pngs_task():
+    # TODO test this
     chart_png_ids = EmailChartPNG.objects.filter(
-        email=None,
-        # created_at__lt=timezone.now() - timezone.timedelta(hours=2)
-    ).values_list("chart_png__id", flat=True)
-    chart_png_ids = ChartPNG.objects.all()
-    print("HELLO", chart_png_ids)
-    ChartPNG.objects.filter(id__in=chart_png_ids).delete()
+        email=None, created_at__lt=timezone.now() - timezone.timedelta(hours=2)
+    ).values_list("chart_png_id", flat=True)
+    chart_pngs = ChartPNG.objects.filter(id__in=chart_png_ids)
+    # Filter chart_pngs that have no emails
+    for chart_png in chart_pngs:
+        if (
+            chart_png.c_email_chart_pngs.filter(email=None).count()
+            == chart_png.c_email_chart_pngs.count()
+        ):
+            chart_png.delete()

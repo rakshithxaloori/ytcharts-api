@@ -43,12 +43,13 @@ class Email(models.Model):
     )
 
     user = models.ForeignKey(User, related_name="emails", on_delete=models.CASCADE)
-    created_at = models.DateTimeField(timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     to = models.EmailField()
     subject = models.CharField(max_length=255)
     html_message = models.TextField()
+    plain_message = models.TextField()
     sender = models.EmailField()
     reply_to = models.EmailField()
 
@@ -74,7 +75,7 @@ class ChartPNG(models.Model):
         related_name="chart_pngs",
         through="EmailChartPNG",
     )
-    created_at = models.DateTimeField(timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     path = models.CharField(max_length=1024)
@@ -100,7 +101,7 @@ class EmailChartPNG(models.Model):
     chart_png = models.ForeignKey(
         ChartPNG, related_name="c_email_chart_pngs", on_delete=models.CASCADE
     )
-    created_at = models.DateTimeField(timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

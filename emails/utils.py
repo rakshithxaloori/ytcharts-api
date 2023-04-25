@@ -8,7 +8,9 @@ from django.conf import settings
 from emails.models import Email
 
 
-def send_email(to, subject, html_message, sender, reply_to, client=Email.RESEND):
+def send_email(
+    to, subject, html_message, plain_message, sender, reply_to, client=Email.RESEND
+):
     if client == Email.RESEND:
         api_key = settings.RESEND_API_KEY
         endpoint = "https://api.resend.com/email"
@@ -20,6 +22,7 @@ def send_email(to, subject, html_message, sender, reply_to, client=Email.RESEND)
             "to": to,
             "subject": subject,
             "html": html_message,
+            "text": plain_message,
             "from": sender,
             "reply_to": reply_to,
             "cc": reply_to,

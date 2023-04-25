@@ -1,9 +1,18 @@
+import datetime
+
 from celery.schedules import crontab
 
 
 from getabranddeal.celery import app as celery_app
 
-from yt.models import AccessKeys, Channel, Video, DailyViews, DemographicsViews
+from yt.models import (
+    AccessKeys,
+    Channel,
+    Video,
+    TopCountry,
+    DailyViews,
+    DemographicsViews,
+)
 from yt.yt_api_utils import (
     get_yt_channels_yt_api,
     get_videos_yt_api,
@@ -31,9 +40,11 @@ def fetch_daily_analytics_task(username=None):
     update_channels(username)
     # Fetch all recent videos
     fetch_latest_videos(username)
-    # Fetch daily views with top countries
+    # Get top countries
+    fetch_top_countries(username)
+    # Fetch daily views
     fetch_daily_views.delay(username)
-    # Fetch demographics with top countries
+    # Fetch demographics
     fetch_demographics_views.delay(username)
 
 
@@ -93,6 +104,10 @@ def fetch_top_countries(username=None):
         access_keys_list = AccessKeys.objects.all()
     else:
         access_keys_list = AccessKeys.objects.filter(user__username=username)
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
+        "%Y-%m-%d"
+    )
     for access_keys in access_keys_list:
         username = access_keys.user.username
         top_countries = get_top_countries_yt_api(username)
@@ -124,6 +139,21 @@ def fetch_top_countries(username=None):
         #     ],
         #     "rows": [["IN", 13, 3, 13, 3.5699999999999994, 0]],
         # }
+        for row in top_countries["rows"]:
+            if len(row) == 6:
+                TopCountry.objects.update_or_create(
+                    user=access_keys.user,
+                    country_code=row[0],
+                    defaults={
+                        "views": row[1],
+                        "estimated_minutes_watched": row[2],
+                        "average_view_duration": row[3],
+                        "average_viewer_percentage": row[4],
+                        "subscribers_gained": row[5],
+                        "start_date": start_date,
+                        "end_date": end_date,
+                    },
+                )
 
 
 @celery_app.task
@@ -136,20 +166,26 @@ def fetch_daily_views(username=None):
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
-                # TODO country_code
-                country_code = "##"
-                day_views = get_day_views_yt_api(username, video.id, country_code)
-                if "rows" not in day_views:
-                    continue
-                for row in day_views["rows"]:
-                    if len(row) == 2:
-                        DailyViews.objects.update_or_create(
-                            user=access_keys.user,
-                            video=video,
-                            country_code=country_code,
-                            date=row[0],
-                            defaults={"views": row[1]},
-                        )
+                top_countries_codes = list(
+                    TopCountry.objects.filter(user=access_keys.user).values_list(
+                        "country_code", flat=True
+                    )
+                )
+                top_countries_codes.append("##")
+                for top_country_code in top_countries_codes:
+                    country_code = top_country_code
+                    day_views = get_day_views_yt_api(username, video.id, country_code)
+                    if "rows" not in day_views:
+                        continue
+                    for row in day_views["rows"]:
+                        if len(row) == 2:
+                            DailyViews.objects.update_or_create(
+                                user=access_keys.user,
+                                video=video,
+                                country_code=country_code,
+                                date=row[0],
+                                defaults={"views": row[1]},
+                            )
 
 
 @celery_app.task
@@ -158,31 +194,45 @@ def fetch_demographics_views(username=None):
         access_keys_list = AccessKeys.objects.all()
     else:
         access_keys_list = AccessKeys.objects.filter(user__username=username)
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
+        "%Y-%m-%d"
+    )
     for access_keys in access_keys_list:
         username = access_keys.user.username
         for channel in Channel.objects.filter(user=access_keys.user):
             for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
-                # TODO country_code
-                country_code = "##"
-                demographics_views = get_demographics_viewer_perc_yt_api(
-                    username, video.id, country_code
+                top_countries_codes = list(
+                    TopCountry.objects.filter(user=access_keys.user).values_list(
+                        "country_code", flat=True
+                    )
                 )
-                if "rows" not in demographics_views:
-                    continue
-                for row in demographics_views["rows"]:
-                    if len(row) == 3:
-                        yt_gender = row[1]
-                        if yt_gender == "female":
-                            yt_gender = DemographicsViews.FEMALE
-                        elif yt_gender == "male":
-                            yt_gender = DemographicsViews.MALE
-                        else:
-                            yt_gender = DemographicsViews.USER_UNSPECIFIED
-                        DemographicsViews.objects.update_or_create(
-                            user=access_keys.user,
-                            video=video,
-                            country_code=country_code,
-                            age_group=row[0],
-                            gender=yt_gender,
-                            defaults={"viewer_percentage": row[2]},
-                        )
+                top_countries_codes.append("##")
+                for top_country_code in top_countries_codes:
+                    country_code = top_country_code
+                    demographics_views = get_demographics_viewer_perc_yt_api(
+                        username, video.id, country_code
+                    )
+                    if "rows" not in demographics_views:
+                        continue
+                    for row in demographics_views["rows"]:
+                        if len(row) == 3:
+                            yt_gender = row[1]
+                            if yt_gender == "female":
+                                yt_gender = DemographicsViews.FEMALE
+                            elif yt_gender == "male":
+                                yt_gender = DemographicsViews.MALE
+                            else:
+                                yt_gender = DemographicsViews.USER_UNSPECIFIED
+                            DemographicsViews.objects.update_or_create(
+                                user=access_keys.user,
+                                video=video,
+                                country_code=country_code,
+                                age_group=row[0],
+                                gender=yt_gender,
+                                defaults={
+                                    "viewer_percentage": row[2],
+                                    "start_date": start_date,
+                                    "end_date": end_date,
+                                },
+                            )

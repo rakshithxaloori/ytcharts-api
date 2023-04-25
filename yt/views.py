@@ -1,4 +1,7 @@
+import datetime
+
 from django.http import JsonResponse
+from django.db.models import Q
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -87,9 +90,16 @@ def get_views_view(request):
         video = Video.objects.get(user=user, video_id=video_id)
     except Video.DoesNotExist:
         video = user.videos.order_by("-published_at").first()
-    daily_views = DailyViews.objects.filter(
-        video=video, country_code=country_code
-    ).order_by("-date")[:num_days]
+
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=num_days)).strftime(
+        "%Y-%m-%d"
+    )
+    daily_views = (
+        DailyViews.objects.filter(video=video, country_code=country_code)
+        .order_by("-date")
+        .exclude(Q(date__lt=start_date) | Q(date__gt=end_date))
+    )
     daily_views_data = DailyViewsSerializer(daily_views, many=True).data
     daily_views_data.reverse()
     return JsonResponse(

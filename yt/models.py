@@ -65,6 +65,32 @@ class AccessKeys(models.Model):
         verbose_name_plural = "Access Keys"
 
 
+class TopCountry(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="top_countries"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+    country_code = models.CharField(max_length=2)
+    views = models.PositiveBigIntegerField(default=0)
+    estimated_minutes_watched = models.PositiveBigIntegerField(default=0)
+    average_view_duration = models.PositiveBigIntegerField(default=0)
+    average_viewer_percentage = models.FloatField(default=0)
+    subscribers_gained = models.PositiveBigIntegerField(default=0)
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    def __str__(self):
+        return f"{self.user.username} | {self.country_code}"
+
+    class Meta:
+        ordering = ["-views", "user__username"]
+        verbose_name_plural = "Top Countries"
+
+
 class DailyViews(models.Model):
     # X-axis - date
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="daily_views")
@@ -81,7 +107,7 @@ class DailyViews(models.Model):
     views = models.PositiveBigIntegerField(default=0)
 
     def __str__(self):
-        return f"{self.video.video_id} {self.user.username} | {self.date}: {self.views}"
+        return f"{self.video.video_id} {self.user.username} {self.country_code} | {self.date}: {self.views}"
 
     class Meta:
         ordering = ["video__published_at", "date"]
@@ -132,8 +158,11 @@ class DemographicsViews(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     viewer_percentage = models.FloatField()
 
+    start_date = models.DateField()
+    end_date = models.DateField()
+
     def __str__(self):
-        return f"{self.video.video_id} {self.user.username} | {self.age_group} {self.gender}: {self.viewer_percentage: .2f}%"
+        return f"{self.video.video_id} {self.user.username} {self.country_code} | {self.age_group} {self.gender}: {self.viewer_percentage: .2f}%"
 
     class Meta:
         ordering = ["video__published_at", "age_group", "gender"]

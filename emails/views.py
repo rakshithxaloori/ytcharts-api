@@ -46,9 +46,10 @@ RESEND_TYPE = {
 def get_presigned_post_view(request):
     params = request.data.get("params", None)
     size = request.data.get("size", None)
-    if None in [params, size] or size > 1 * 1024 * 1024:  # 1 MB
+    if None in [params, size] or size > 2 * 1024 * 1024:  # 2 MB
         return BAD_REQUEST_RESPONSE
 
+    params = dict(sorted(params.items()))
     json_str = json.dumps(params)
     filename = base64.b64encode(json_str.encode("utf-8")).decode("utf-8") + ".png"
     file_path = request.user.username + "/" + filename

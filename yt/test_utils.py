@@ -3,6 +3,8 @@ from datetime import date, timedelta
 
 from yt.models import DemographicsViews
 
+NUM_DAYS = 90
+
 dayViewsResultTable = {
     "kind": "youtubeAnalytics#resultTable",
     "columnHeaders": [
@@ -15,7 +17,7 @@ dayViewsResultTable = {
 
 def test_get_day_views_yt_api():
     today = date.today()
-    for i in range(30):
+    for i in range(NUM_DAYS):
         row_date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
         row_views = random.randint(1, 1000)
         dayViewsResultTable["rows"].append([row_date, row_views])

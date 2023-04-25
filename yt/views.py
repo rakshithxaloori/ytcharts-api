@@ -95,19 +95,27 @@ def get_views_view(request):
     start_date = (datetime.datetime.now() - datetime.timedelta(days=num_days)).strftime(
         "%Y-%m-%d"
     )
-    daily_views = (
-        DailyViews.objects.filter(video=video, country_code=country_code)
-        .order_by("-date")
-        .exclude(Q(date__lt=start_date) | Q(date__gt=end_date))
+    top_countries_codes = list(
+        request.user.top_countries.values_list("country_code", flat=True)
     )
-    daily_views_data = DailyViewsSerializer(daily_views, many=True).data
-    daily_views_data.reverse()
+    top_countries_codes.append("##")
+    payload_data = []
+    for country_code in top_countries_codes:
+        daily_views = (
+            DailyViews.objects.filter(video=video, country_code=country_code)
+            .order_by("-date")
+            .exclude(Q(date__lt=start_date) | Q(date__gt=end_date))
+        )
+        daily_views_data = DailyViewsSerializer(daily_views, many=True).data
+        daily_views_data.reverse()
+        payload_data.append({"country_code": country_code, "views": daily_views_data})
+    payload_data.sort(key=lambda x: x["country_code"])
     return JsonResponse(
         {
             "detail": "Daily views",
             "payload": {
                 "video": VideoSerializer(video).data,
-                "data": {"country_code": country_code, "views": daily_views_data},
+                "data": payload_data,
             },
         },
         status=status.HTTP_200_OK,

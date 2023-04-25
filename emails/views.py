@@ -25,7 +25,11 @@ from emails.tasks import send_email_task
 from emails.s3 import create_presigned_s3_post
 from emails.models import Email, ChartPNG
 from emails.utils import get_cdn_url
-from emails.serializers import EmailShortSerializer, EmailLongSerializer
+from emails.serializers import (
+    SettingsSerializer,
+    EmailShortSerializer,
+    EmailLongSerializer,
+)
 
 
 CREATOR_MAIL_DOMAIN = settings.CREATOR_MAIL_DOMAIN
@@ -41,6 +45,21 @@ RESEND_TYPE = {
 }
 
 GET_EMAILS_COUNT = 20
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_settings_view(request):
+    settings = request.user.settings
+    settings_data = SettingsSerializer(settings).data
+    return JsonResponse(
+        {
+            "detail": "Settings retrieved successfully",
+            "payload": {"settings": settings_data},
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["POST"])

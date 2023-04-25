@@ -6,6 +6,21 @@ from django.utils import timezone
 from authentication.models import User
 
 
+class Settings(models.Model):
+    user = models.OneToOneField(User, related_name="settings", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    default_message = models.TextField()
+    default_subject = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f"{self.user.email}"
+
+    class Meta:
+        verbose_name_plural = "Settings"
+
+
 class Email(models.Model):
     QUEUED = "q"
     # Resend types https://resend.com/docs/webhooks

@@ -152,6 +152,7 @@ def get_presigned_post_view(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def post_email_view(request):
+    # TODO only 100 emails per day
     to = request.data.get("to", None)
     subject = request.data.get("subject", None)
     html_message = request.data.get("html_message", None)

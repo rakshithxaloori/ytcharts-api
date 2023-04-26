@@ -30,6 +30,7 @@ urlpatterns = [
     path("authentication/", include("authentication.urls")),
     path("yt/", include("yt.urls")),
     path("emails/", include("emails.urls")),
+    path("payments/", include("payments.urls")),
 ]
 
 if os.environ["CI_CD_STAGE"] == "development":

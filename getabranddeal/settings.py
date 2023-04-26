@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "authentication",
     "yt",
     "emails",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -229,3 +230,8 @@ if CI_CD_STAGE == DEV_STAGE:
     )
 
 CORS_ALLOW_METHODS = ["GET", "POST"]
+
+################################################################################
+# Stripe
+STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
+STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]

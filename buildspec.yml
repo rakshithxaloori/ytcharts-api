@@ -65,7 +65,7 @@ phases:
 
       - cat aws/prod/taskdef.json
 
-      - printf '[{"name":"gabd-api","imageUri":"%s"},{"name":"gabd-nginx","imageUri":"%s"},{"name":"gabd-celery","imageUri":"%s"},{"name":"gabd-beat-celery","imageUri":"%s"}]' $API_URI_T $NGINX_URI_T $CELERY_URI_T $BEAT_URI_T > imagedefinitions.json
+      - printf '[{"name":"gabd-api","imageUri":"%s"},{"name":"gabd-nginx","imageUri":"%s"},{"name":"gabd-celery","imageUri":"%s"},{"name":"gabd-beat","imageUri":"%s"}]' $API_URI_T $NGINX_URI_T $CELERY_URI_T $BEAT_URI_T > imagedefinitions.json
 
 artifacts:
   files:

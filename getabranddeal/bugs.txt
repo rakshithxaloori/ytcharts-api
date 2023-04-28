@@ -1,0 +1,11 @@
+[2023-04-23 07:00:00,070: ERROR/MainProcess] Process 'ForkPoolWorker-9' pid:18241 exited with 'signal 11 (SIGSEGV)'
+[2023-04-23 07:00:00,083: ERROR/MainProcess] Task handler raised error: WorkerLostError('Worker exited prematurely: signal 11 (SIGSEGV) Job: 1.')
+Traceback (most recent call last):
+  File "/Users/GetABrandDeal/django/venv/lib/python3.9/site-packages/billiard/pool.py", line 1265, in mark_as_worker_lost
+    raise WorkerLostError(
+billiard.exceptions.WorkerLostError: Worker exited prematurely: signal 11 (SIGSEGV) Job: 1.
+
+FIX
+The error is caused by boto3 client initialization. 
+It works fine in shell & runserver but errors in worker process.
+Move the boto3 client initializations into the function.

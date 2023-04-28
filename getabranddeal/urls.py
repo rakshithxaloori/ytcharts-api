@@ -1,4 +1,4 @@
-"""proeliumx URL Configuration
+"""getabranddeal URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.1/topics/http/urls/
@@ -16,7 +16,8 @@ Including another URLconf
 import os
 from django.contrib import admin
 from django.urls import path, include
-
+from django.conf import settings
+from django.conf.urls.static import static
 
 admin_url = "admin"
 
@@ -28,4 +29,14 @@ urlpatterns = [
     path("{}/".format(admin_url), admin.site.urls),
     path("authentication/", include("authentication.urls")),
     path("yt/", include("yt.urls")),
+    path("emails/", include("emails.urls")),
+    path("payments/", include("payments.urls")),
+    path("ht/", include("health.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns = (
+        urlpatterns
+        + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+        + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    )

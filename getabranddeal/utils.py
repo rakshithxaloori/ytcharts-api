@@ -13,6 +13,8 @@ BAD_REQUEST_RESPONSE = JsonResponse(
     {"detail": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST
 )
 
+TESTING_ACCOUNTS = ["118045026297312510413"]
+
 
 def get_ip_address(http_forwarded_for, remote_addr):
     x_forwarded_for = http_forwarded_for
@@ -35,3 +37,10 @@ def get_country_code(http_forwarded_for, remote_addr):
 
 def get_now_timestamp():
     return int(timezone.now().timestamp())
+
+
+def get_serializer_first_error(errors):
+    errors_dict = dict(errors)
+    return (
+        f"{list(errors_dict.keys())[0]}: {errors_dict[list(errors_dict.keys())[0]][0]}"
+    )

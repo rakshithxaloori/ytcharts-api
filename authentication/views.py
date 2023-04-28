@@ -9,7 +9,6 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from rest_framework_api_key.permissions import HasAPIKey
 
 from knox.auth import TokenAuthentication
 
@@ -17,12 +16,12 @@ from knox.auth import TokenAuthentication
 from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
-from proeliumx.utils import BAD_REQUEST_RESPONSE, get_country_code
+from getabranddeal.utils import BAD_REQUEST_RESPONSE, get_country_code
 
 
 @api_view(["GET", "POST"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def signout_view(request):
     # Delete auth token
     request._auth.delete()
@@ -30,12 +29,10 @@ def signout_view(request):
 
 
 @api_view(["POST"])
-# @permission_classes([HasAPIKey])
 def signin_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
     expires_at = request.data.get("expires_at", None)
-    print(access_token, refresh_token, expires_at)
 
     if None in [access_token, refresh_token, expires_at]:
         return BAD_REQUEST_RESPONSE
@@ -68,7 +65,7 @@ def signin_view(request):
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def last_open_view(request):
     user = request.user
     user.last_open = timezone.now()

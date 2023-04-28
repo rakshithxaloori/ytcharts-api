@@ -1,0 +1,149 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/prod/api.Dockerfile
+      args:
+        - SECRET_KEY=${SECRET_KEY}
+        - ADMIN_URL=${ADMIN_URL}
+
+        - RDS_USERNAME=${RDS_USERNAME}
+        - RDS_PASSWORD=${RDS_PASSWORD}
+        - RDS_HOSTNAME=${RDS_HOSTNAME}
+
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - RESEND_WEBHOOK_SIGNING_KEY=${RESEND_WEBHOOK_SIGNING_KEY}
+
+        - STRIPE_API_KEY=${STRIPE_API_KEY}
+        - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+        # Public keys
+        - CI_CD_STAGE=${CI_CD_STAGE}
+        - RDS_DB_NAME=${RDS_DB_NAME}
+        - RDS_PORT=${RDS_PORT}
+        - REDIS_URL=${REDIS_URL}
+        - CREATOR_MAIL_DOMAIN=${CREATOR_MAIL_DOMAIN}
+        - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME}
+        - AWS_S3_CUSTOM_DOMAIN=${AWS_S3_CUSTOM_DOMAIN}
+
+    image: api:latest
+    command:
+      - python manage.py migrate --noinput
+      - python manage.py collectstatic --noinput
+      - daphne -b 0.0.0.0 -p 8000 getabranddeal.asgi:application
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "8000:8000"
+    restart: on-failure
+
+  nginx:
+    build: docker/prod/nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    restart: on-failure
+    depends_on:
+      - api
+    healthcheck:
+      test: curl --fail http://localhost/ht/ || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 30s
+      timeout: 10s
+
+  celery:
+    build:
+      context: .
+      dockerfile: docker/prod/celery.Dockerfile
+      args:
+        - SECRET_KEY=${SECRET_KEY}
+        - ADMIN_URL=${ADMIN_URL}
+
+        - RDS_USERNAME=${RDS_USERNAME}
+        - RDS_PASSWORD=${RDS_PASSWORD}
+        - RDS_HOSTNAME=${RDS_HOSTNAME}
+
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - RESEND_WEBHOOK_SIGNING_KEY=${RESEND_WEBHOOK_SIGNING_KEY}
+
+        - STRIPE_API_KEY=${STRIPE_API_KEY}
+        - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+        # Public keys
+        - CI_CD_STAGE=${CI_CD_STAGE}
+        - RDS_DB_NAME=${RDS_DB_NAME}
+        - RDS_PORT=${RDS_PORT}
+        - REDIS_URL=${REDIS_URL}
+        - CREATOR_MAIL_DOMAIN=${CREATOR_MAIL_DOMAIN}
+        - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME}
+        - AWS_S3_CUSTOM_DOMAIN=${AWS_S3_CUSTOM_DOMAIN}
+
+    image: celery:latest
+    command: celery -A thisorthat worker -l INFO --uid=nobody --gid=nogroup -Q celery
+    volumes:
+      - .:/usr/src/app
+    restart: on-failure
+    depends_on:
+      - nginx
+
+  beat:
+    build:
+      context: .
+      dockerfile: docker/prod/beat.Dockerfile
+      args:
+        - SECRET_KEY=${SECRET_KEY}
+        - ADMIN_URL=${ADMIN_URL}
+
+        - RDS_USERNAME=${RDS_USERNAME}
+        - RDS_PASSWORD=${RDS_PASSWORD}
+        - RDS_HOSTNAME=${RDS_HOSTNAME}
+
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - RESEND_WEBHOOK_SIGNING_KEY=${RESEND_WEBHOOK_SIGNING_KEY}
+
+        - STRIPE_API_KEY=${STRIPE_API_KEY}
+        - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+        # Public keys
+        - CI_CD_STAGE=${CI_CD_STAGE}
+        - RDS_DB_NAME=${RDS_DB_NAME}
+        - RDS_PORT=${RDS_PORT}
+        - REDIS_URL=${REDIS_URL}
+        - CREATOR_MAIL_DOMAIN=${CREATOR_MAIL_DOMAIN}
+        - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME}
+        - AWS_S3_CUSTOM_DOMAIN=${AWS_S3_CUSTOM_DOMAIN}
+
+    image: beat:latest
+    command: celery -A thisorthat beat -l info
+    volumes:
+      - .:/usr/src/app
+    restart: on-failure
+    depends_on:
+      - nginx

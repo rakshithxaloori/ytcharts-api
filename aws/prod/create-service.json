@@ -1,0 +1,23 @@
+{
+  "serviceName": "gabd",
+  "taskDefinition": "gabd:1",
+  "cluster": "gabd",
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:662294483096:targetgroup/gabd/e203b45ad02dbc15",
+      "containerName": "gabd-nginx",
+      "containerPort": 80
+    }
+  ],
+  "desiredCount": 1,
+  "enableExecuteCommand": true,
+  "launchType": "FARGATE",
+  "schedulingStrategy": "REPLICA",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": ["subnet-0954407667b27375e"],
+      "securityGroups": ["sg-06844803a2eb675c5"],
+      "assignPublicIp": "ENABLED"
+    }
+  }
+}

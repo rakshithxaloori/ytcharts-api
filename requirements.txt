@@ -2,7 +2,13 @@ Django==4.2
 psycopg2-binary==2.9.6
 python-dotenv==1.0.0
 djangorestframework==3.14.0
-djangorestframework-api-key==2.3.0
 django-rest-knox==4.2.0
 django-cors-headers==3.14.0
 requests==2.28.2
+boto3==1.26.118
+celery==5.2.7
+django-redis==5.2.0
+django-storages==1.13.2
+svix==0.83.1    # To verify resend webhook
+stripe==5.4.0
+daphne==4.0.0

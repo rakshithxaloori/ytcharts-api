@@ -17,8 +17,10 @@ def token_response(user):
             "payload": {
                 "token_key": token,
                 "user": {
+                    "name": user.first_name + " " + user.last_name,
+                    "email": user.email,
+                    "image": user.picture,
                     "username": user.username,
-                    "picture": user.picture,
                 },
             },
         },

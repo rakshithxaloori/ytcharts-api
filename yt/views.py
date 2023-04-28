@@ -1,5 +1,7 @@
+import datetime
+
 from django.http import JsonResponse
-from django.utils import timezone
+from django.db.models import Q
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +11,6 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from rest_framework_api_key.permissions import HasAPIKey
 
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
@@ -18,17 +19,17 @@ from knox.models import AuthToken
 from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
-from proeliumx.utils import BAD_REQUEST_RESPONSE
-from yt.yt_api_utils import get_access_token, get_yt_channels_info
-from yt.instances_utils import (
-    create_or_update_yt_keys,
-    create_delete_update_yt_channels,
-)
+from getabranddeal.utils import BAD_REQUEST_RESPONSE
+from yt.yt_api_utils import get_access_token
+from yt.models import AccessKeys, Video, DailyViews
+from yt.serializers import VideoSerializer, DailyViewsSerializer
+from yt.isocodes import ISO_CODES
+from yt.tasks import fetch_daily_analytics_task
 
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
+@permission_classes([IsAuthenticated])
 def check_connected_view(request):
     return JsonResponse(
         {
@@ -42,8 +43,6 @@ def check_connected_view(request):
 
 
 @api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated, HasAPIKey])
 def connect_yt_view(request):
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
@@ -57,15 +56,67 @@ def connect_yt_view(request):
         return BAD_REQUEST_RESPONSE
     try:
         user = User.objects.get(username=google_user_info["id"])
-        yt_channels = get_yt_channels_info(access_token)
-
-        if yt_channels is None:
-            return BAD_REQUEST_RESPONSE
-
-        create_or_update_yt_keys(user, access_token, refresh_token, expires_at)
-        create_delete_update_yt_channels(user, yt_channels)
+        AccessKeys.objects.update_or_create(
+            user=user,
+            defaults={
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expires_at": expires_at,
+                "is_refresh_valid": True,
+            },
+        )
 
         AuthToken.objects.filter(user=user).delete()
+
+        fetch_daily_analytics_task.delay(user.username)
         return token_response(user)
     except User.DoesNotExist:
         return BAD_REQUEST_RESPONSE
+
+
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_views_view(request):
+    video_id = request.data.get("video_id", None)
+    country_code = request.data.get("country_code", "##")
+    # num_days = request.data.get("num_days", 30)
+    num_days = 30
+
+    if country_code != "##" and country_code not in ISO_CODES.keys():
+        return BAD_REQUEST_RESPONSE
+    user = request.user
+    try:
+        video = Video.objects.get(user=user, video_id=video_id)
+    except Video.DoesNotExist:
+        video = user.videos.order_by("-published_at").first()
+
+    end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=num_days)).strftime(
+        "%Y-%m-%d"
+    )
+    top_countries_codes = list(
+        request.user.top_countries.values_list("country_code", flat=True)
+    )
+    top_countries_codes.append("##")
+    payload_data = []
+    for country_code in top_countries_codes:
+        daily_views = (
+            DailyViews.objects.filter(video=video, country_code=country_code)
+            .order_by("-date")
+            .exclude(Q(date__lt=start_date) | Q(date__gt=end_date))
+        )
+        daily_views_data = DailyViewsSerializer(daily_views, many=True).data
+        daily_views_data.reverse()
+        payload_data.append({"country_code": country_code, "views": daily_views_data})
+    payload_data.sort(key=lambda x: x["country_code"])
+    return JsonResponse(
+        {
+            "detail": "Daily views",
+            "payload": {
+                "video": VideoSerializer(video).data,
+                "data": payload_data,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )

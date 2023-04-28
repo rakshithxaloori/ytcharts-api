@@ -14,7 +14,7 @@ class User(AbstractUser):
         if self.is_staff:
             return self.username
         else:
-            return "{} {} || active {} days ago".format(
+            return "{} {} | active {} days ago".format(
                 self.first_name, self.last_name, days_diff
             )
 

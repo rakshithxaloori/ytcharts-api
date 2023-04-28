@@ -1,0 +1,74 @@
+version: 0.2
+
+env:
+  parameter-store:
+    SECRET_KEY: "/gabd/SECRET_KEY"
+    ADMIN_URL: "/gabd/ADMIN_URL"
+
+    RDS_USERNAME: "/gabd/RDS_USERNAME"
+    RDS_PASSWORD: "/gabd/RDS_PASSWORD"
+    RDS_HOSTNAME: "/gabd/RDS_HOSTNAME"
+
+    AWS_ACCESS_KEY_ID: "/gabd/AWS_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY: "/gabd/AWS_SECRET_ACCESS_KEY"
+    AWS_STORAGE_BUCKET_NAME: "/gabd/AWS_STORAGE_BUCKET_NAME"
+
+    GOOGLE_CLIENT_ID: "/gabd/GOOGLE_CLIENT_ID"
+    GOOGLE_CLIENT_SECRET: "/gabd/GOOGLE_CLIENT_SECRET"
+    GOOGLE_API_KEY: "/gabd/GOOGLE_API_KEY"
+
+    RESEND_API_KEY: "/gabd/RESEND_API_KEY"
+    RESEND_WEBHOOK_SIGNING_KEY: "/gabd/RESEND_WEBHOOK_SIGNING_KEY"
+
+    STRIPE_API_KEY: "/gabd/STRIPE_API_KEY"
+    STRIPE_WEBHOOK_SECRET: "/gabd/STRIPE_WEBHOOK_SECRET"
+
+phases:
+  pre_build:
+    commands:
+      - echo Fetching env variables from S3...
+      - touch .env
+      - aws s3 cp $S3_ENV_FILE ./.env
+      - . ./.env
+
+      - echo CI_CD_STAGE $CI_CD_STAGE
+
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+  build:
+    commands:
+      - DATE=$(date +"%Y%m%d_%H%M%S")
+      - echo Build started on $(date +"%Y%m%d_%H%M%S")
+      - echo Building the Docker images...
+      - API_URI_T=$REPOSITORY_URI:api_$DATE
+      - NGINX_URI_T=$REPOSITORY_URI:nginx_$DATE
+      - CELERY_URI_T=$REPOSITORY_URI:celery_$DATE
+      - BEAT_URI_T=$REPOSITORY_URI:beat_$DATE
+
+      - docker-compose -f docker-compose.prod.yml build
+      - docker tag api:latest $API_URI_T
+      - docker tag nginx:latest $NGINX_URI_T
+      - docker tag celery:latest $CELERY_URI_T
+      - docker tag beat:latest $BEAT_URI_T
+      # - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on $(date +"%Y%m%d_%H%M%S")
+      - echo Pushing the Docker images...
+      - docker push --all-tags $REPOSITORY_URI
+
+      - sed -i 's@<NGINX_IMAGE>@'"$NGINX_URI_T"'@' aws/prod/taskdef.json
+      - sed -i 's@<API_IMAGE>@'"$API_URI_T"'@' aws/prod/taskdef.json
+      - sed -i 's@<CELERY_IMAGE>@'"$CELERY_URI_T"'@' aws/prod/taskdef.json
+      - sed -i 's@<BEAT_IMAGE>@'"$BEAT_URI_T"'@' aws/prod/taskdef.json
+
+      - cat aws/prod/taskdef.json
+
+      - printf '[{"name":"gabd-api","imageUri":"%s"},{"name":"gabd-nginx","imageUri":"%s"},{"name":"gabd-celery","imageUri":"%s"},{"name":"gabd-beat-celery","imageUri":"%s"}]' $API_URI_T $NGINX_URI_T $CELERY_URI_T $BEAT_URI_T > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - aws/prod/taskdef.json
+  name: buildartifacts

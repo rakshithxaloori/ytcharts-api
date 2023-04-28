@@ -51,11 +51,7 @@ class Email(models.Model):
     )
 
     RESEND = "r"
-    SES = "s"
-    CLIENT_CHOICES = (
-        (RESEND, "Resend"),
-        (SES, "SES"),
-    )
+    CLIENT_CHOICES = ((RESEND, "Resend"),)
 
     user = models.ForeignKey(User, related_name="emails", on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)

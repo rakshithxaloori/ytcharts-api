@@ -14,3 +14,4 @@ class Customer(models.Model):
     stripe_customer_id = models.CharField(max_length=255)
     stripe_subscription_id = models.CharField(max_length=255)
     current_period_end = models.DateTimeField()
+    is_active = models.BooleanField(default=True)

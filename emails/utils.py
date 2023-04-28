@@ -1,7 +1,4 @@
 import requests
-import boto3
-
-from botocore.exceptions import ClientError
 
 from django.conf import settings
 
@@ -34,31 +31,6 @@ def send_email(
             return json_data["id"]
         else:
             print("RESEND ERROR", response.text)
-            return None
-    elif client == Email.SES:
-        try:
-            ses_client = boto3.client(
-                service_name="ses",
-                aws_access_key_id=settings.AWS_SES_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SES_SECRET_ACCESS_KEY,
-                region_name=settings.AWS_SES_REGION_NAME,
-            )
-            response = ses_client.send_email(
-                Source=sender,
-                Destination={
-                    "ToAddresses": [to],
-                    "CcAddresses": [reply_to] if reply_to else [],
-                },
-                Message={
-                    "Subject": {"Data": subject},
-                    "Body": {"Html": {"Data": html_message}},
-                },
-                ReplyToAddresses=[reply_to] if reply_to else [],
-            )
-            print("SES RESPONSE", response)
-            return response["MessageId"]
-        except ClientError as e:
-            print("SES ERROR", e.response["Error"]["Message"])
             return None
 
 

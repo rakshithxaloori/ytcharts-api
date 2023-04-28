@@ -31,7 +31,12 @@ urlpatterns = [
     path("yt/", include("yt.urls")),
     path("emails/", include("emails.urls")),
     path("payments/", include("payments.urls")),
+    path("ht/", include("health.urls")),
 ]
 
-if os.environ["CI_CD_STAGE"] == "development":
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+if settings.DEBUG:
+    urlpatterns = (
+        urlpatterns
+        + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+        + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    )

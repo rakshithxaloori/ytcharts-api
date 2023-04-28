@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "yt",
     "emails",
     "payments",
+    "health",
 ]
 
 MIDDLEWARE = [
@@ -190,13 +191,6 @@ CREATOR_MAIL_DOMAIN = os.environ["CREATOR_MAIL_DOMAIN"]
 # Resend
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
 RESEND_WEBHOOK_SIGNING_KEY = os.environ["RESEND_WEBHOOK_SIGNING_KEY"]
-
-################################################################################
-# AWS SES
-AWS_SES_ACCESS_KEY_ID = os.environ["AWS_SES_ACCESS_KEY_ID"]
-AWS_SES_SECRET_ACCESS_KEY = os.environ["AWS_SES_SECRET_ACCESS_KEY"]
-AWS_SES_REGION_NAME = "us-east-1"
-AWS_SES_REGION_ENDPOINT = "email.us-east-1.amazonaws.com"
 
 ################################################################################
 # Celery

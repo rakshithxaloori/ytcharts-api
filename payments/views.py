@@ -96,5 +96,6 @@ def stripe_webhook_view(request):
 
     elif poll_type == "customer.subscription.deleted":
         print(subscription)
+        # TODO set is_active to False
 
     return HttpResponse(status=200)

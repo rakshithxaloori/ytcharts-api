@@ -11,3 +11,4 @@ django-redis==5.2.0
 django-storages==1.13.2
 svix==0.83.1    # To verify resend webhook
 stripe==5.4.0
+daphne==4.0.0

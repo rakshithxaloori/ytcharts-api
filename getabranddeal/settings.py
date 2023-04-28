@@ -186,7 +186,6 @@ GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 # Email
 CREATOR_MAIL_DOMAIN = os.environ["CREATOR_MAIL_DOMAIN"]
 
-
 ################################################################################
 # Resend
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]

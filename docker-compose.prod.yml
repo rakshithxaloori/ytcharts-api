@@ -67,6 +67,35 @@ services:
       context: .
       dockerfile: docker/prod/celery.Dockerfile
       args:
+        - SECRET_KEY=${SECRET_KEY}
+        - ADMIN_URL=${ADMIN_URL}
+
+        - RDS_USERNAME=${RDS_USERNAME}
+        - RDS_PASSWORD=${RDS_PASSWORD}
+        - RDS_HOSTNAME=${RDS_HOSTNAME}
+
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - RESEND_WEBHOOK_SIGNING_KEY=${RESEND_WEBHOOK_SIGNING_KEY}
+
+        - STRIPE_API_KEY=${STRIPE_API_KEY}
+        - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+        # Public keys
+        - CI_CD_STAGE=${CI_CD_STAGE}
+        - RDS_DB_NAME=${RDS_DB_NAME}
+        - RDS_PORT=${RDS_PORT}
+        - REDIS_URL=${REDIS_URL}
+        - CREATOR_MAIL_DOMAIN=${CREATOR_MAIL_DOMAIN}
+        - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME}
+        - AWS_S3_CUSTOM_DOMAIN=${AWS_S3_CUSTOM_DOMAIN}
 
     image: celery:latest
     command: celery -A thisorthat worker -l INFO --uid=nobody --gid=nogroup -Q celery
@@ -81,6 +110,35 @@ services:
       context: .
       dockerfile: docker/prod/beat.Dockerfile
       args:
+        - SECRET_KEY=${SECRET_KEY}
+        - ADMIN_URL=${ADMIN_URL}
+
+        - RDS_USERNAME=${RDS_USERNAME}
+        - RDS_PASSWORD=${RDS_PASSWORD}
+        - RDS_HOSTNAME=${RDS_HOSTNAME}
+
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+
+        - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+        - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - RESEND_WEBHOOK_SIGNING_KEY=${RESEND_WEBHOOK_SIGNING_KEY}
+
+        - STRIPE_API_KEY=${STRIPE_API_KEY}
+        - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+        # Public keys
+        - CI_CD_STAGE=${CI_CD_STAGE}
+        - RDS_DB_NAME=${RDS_DB_NAME}
+        - RDS_PORT=${RDS_PORT}
+        - REDIS_URL=${REDIS_URL}
+        - CREATOR_MAIL_DOMAIN=${CREATOR_MAIL_DOMAIN}
+        - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME}
+        - AWS_S3_CUSTOM_DOMAIN=${AWS_S3_CUSTOM_DOMAIN}
 
     image: beat:latest
     command: celery -A thisorthat beat -l info
@@ -89,6 +147,3 @@ services:
     restart: on-failure
     depends_on:
       - nginx
-
-volumes:
-  static:

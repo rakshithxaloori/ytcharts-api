@@ -4,6 +4,7 @@ import datetime
 from django.conf import settings
 from django.utils import timezone
 
+
 from yt.models import AccessKeys
 from yt.test_utils import (
     test_get_day_views_yt_api,
@@ -119,6 +120,42 @@ def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
 
 ##########################################################
 # Using YouTube OAuth
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
+
+
+def get_yt_keys(auth_code):
+    endpoint = "https://oauth2.googleapis.com/token"
+
+    response = requests.post(
+        endpoint,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": "postmessage",
+            "code": auth_code,
+            "grant_type": "authorization_code",
+        },
+    )
+    if response.ok:
+        response_json = response.json()
+        print(response_json)
+        # {
+        #     "access_token": "",
+        #     "expires_in": 3599,
+        #     "refresh_token": "",
+        #     "scope": "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/yt-analytics.readonly openid https://www.googleapis.com/auth/userinfo.email",
+        #     "token_type": "Bearer",
+        #     "id_token": "",
+        # }
+    else:
+        response_json = response.json()
+        print(response_json)
+        print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        return None
+
+
 def get_access_token(username):
     try:
         # Check access token expiry
@@ -130,8 +167,8 @@ def get_access_token(username):
             # Refresh access token
             uri = "https://oauth2.googleapis.com/token"
             post_data = {
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
                 "refresh_token": yt_keys.refresh_token,
                 "grant_type": "refresh_token",
             }

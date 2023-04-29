@@ -19,6 +19,7 @@ from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
 from getabranddeal.utils import BAD_REQUEST_RESPONSE, get_country_code
+from yt.yt_api_utils import get_access_token
 
 
 @api_view(["GET", "POST"])
@@ -79,14 +80,19 @@ def last_open_view(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_custom_username_view(request):
-    user = request.user
+def onboarding_view(request):
+    has_custom_username = request.user.is_custom_username
+    has_yt_connected = get_access_token(request.user.username) is not None
+    has_sent_first_email = request.user.emails.count() > 0
+
     return JsonResponse(
         {
-            "detail": "custom_username",
+            "detail": "onboarding",
             "payload": {
-                "is_custom_username": user.is_custom_username,
-                "username": user.username,
+                "has_custom_username": has_custom_username,
+                "username": request.user.username,
+                "has_youtube_connected": has_yt_connected,
+                "has_sent_first_email": has_sent_first_email,
             },
         },
         status=status.HTTP_200_OK,

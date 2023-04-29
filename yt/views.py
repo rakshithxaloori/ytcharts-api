@@ -20,30 +20,24 @@ from authentication.models import User
 from authentication.utils import token_response
 from authentication.google import get_google_user_info
 from getabranddeal.utils import BAD_REQUEST_RESPONSE
-from yt.yt_api_utils import get_access_token
+from yt.yt_api_utils import get_yt_keys, get_access_token
 from yt.models import AccessKeys, Video, DailyViews
 from yt.serializers import VideoSerializer, DailyViewsSerializer
 from yt.isocodes import ISO_CODES
 from yt.tasks import fetch_daily_analytics_task
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def check_connected_view(request):
-    return JsonResponse(
-        {
-            "detail": "YouTube connected",
-            "payload": {
-                "is_connected": get_access_token(request.user.username) is not None
-            },
-        },
-        status=status.HTTP_200_OK,
-    )
-
-
-@api_view(["POST"])
 def connect_yt_view(request):
+    auth_code = request.data.get("auth_code", None)
+    if auth_code is None:
+        return BAD_REQUEST_RESPONSE
+    get_yt_keys(auth_code)
+    return JsonResponse({"detail": "YouTube connected"}, status=status.HTTP_200_OK)
+    # Get access_token, refresh_token, expires_at from auth_code
+    access_token, refresh_token, expires_at = get_access_token(auth_code)
     access_token = request.data.get("access_token", None)
     refresh_token = request.data.get("refresh_token", None)
     expires_at = request.data.get("expires_at", None)

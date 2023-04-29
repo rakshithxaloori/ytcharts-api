@@ -2,6 +2,7 @@ import datetime
 
 from django.http import JsonResponse
 from django.db.models import Q
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -34,22 +35,23 @@ def connect_yt_view(request):
     auth_code = request.data.get("auth_code", None)
     if auth_code is None:
         return BAD_REQUEST_RESPONSE
-    get_yt_keys(auth_code)
-    return JsonResponse({"detail": "YouTube connected"}, status=status.HTTP_200_OK)
-    # Get access_token, refresh_token, expires_at from auth_code
-    access_token, refresh_token, expires_at = get_access_token(auth_code)
-    access_token = request.data.get("access_token", None)
-    refresh_token = request.data.get("refresh_token", None)
-    expires_at = request.data.get("expires_at", None)
-
-    if None in [access_token, refresh_token, expires_at]:
+    keys_dict = get_yt_keys(auth_code)
+    if keys_dict is None:
         return BAD_REQUEST_RESPONSE
+
+    access_token = keys_dict.get("access_token", None)
+    refresh_token = keys_dict.get("refresh_token", None)
+    expires_in = keys_dict.get("expires_in", None)
+    if None in [access_token, refresh_token, expires_in]:
+        return BAD_REQUEST_RESPONSE
+
+    expires_at = timezone.now().timestamp() + expires_in
 
     google_user_info = get_google_user_info(access_token)
     if google_user_info is None:
         return BAD_REQUEST_RESPONSE
     try:
-        user = User.objects.get(username=google_user_info["id"])
+        user = User.objects.get(email=google_user_info["email"])
         AccessKeys.objects.update_or_create(
             user=user,
             defaults={
@@ -63,7 +65,12 @@ def connect_yt_view(request):
         AuthToken.objects.filter(user=user).delete()
 
         fetch_daily_analytics_task.delay(user.username)
-        return token_response(user)
+        return JsonResponse(
+            {
+                "detail": "Successfully connected to YouTube",
+            },
+            status=status.HTTP_200_OK,
+        )
     except User.DoesNotExist:
         return BAD_REQUEST_RESPONSE
 

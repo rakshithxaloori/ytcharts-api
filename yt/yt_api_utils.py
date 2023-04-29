@@ -47,6 +47,7 @@ def get_top_countries_yt_api(username):
 
 
 def get_day_views_yt_api(username, video_id, country_code=None):
+    # TODO test this without the testing accounts
     if username in TESTING_ACCOUNTS:
         return test_get_day_views_yt_api()
     country_code = None if country_code == "##" else country_code
@@ -85,6 +86,7 @@ def get_day_views_yt_api(username, video_id, country_code=None):
 
 
 def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
+    # TODO test this without the testing accounts
     if username in TESTING_ACCOUNTS:
         return test_get_demographics_viewer_perc_yt_api()
     country_code = None if country_code == "##" else country_code
@@ -126,7 +128,6 @@ GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 
 def get_yt_keys(auth_code):
     endpoint = "https://oauth2.googleapis.com/token"
-
     response = requests.post(
         endpoint,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -140,18 +141,20 @@ def get_yt_keys(auth_code):
     )
     if response.ok:
         response_json = response.json()
-        print(response_json)
-        # {
-        #     "access_token": "",
-        #     "expires_in": 3599,
-        #     "refresh_token": "",
-        #     "scope": "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/yt-analytics.readonly openid https://www.googleapis.com/auth/userinfo.email",
-        #     "token_type": "Bearer",
-        #     "id_token": "",
-        # }
+        gold_scopes = [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/yt-analytics.readonly",
+            "openid",
+        ]
+        gold_scopes.sort()
+        scopes = response_json["scope"].split(" ")
+        scopes.sort()
+        if scopes != gold_scopes:
+            return None
+        return response_json
     else:
-        response_json = response.json()
-        print(response_json)
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
         return None
 

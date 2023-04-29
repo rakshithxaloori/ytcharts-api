@@ -8,6 +8,8 @@ class User(AbstractUser):
     picture = models.URLField(null=True, blank=True)
     country_code = models.CharField(max_length=3, default=DEFAULT_COUNTRY_CODE)
     last_open = models.DateTimeField(default=timezone.now)
+    open_id = models.CharField(max_length=255)  # Google OpenID
+    is_custom_username = models.BooleanField(default=False)
 
     def __str__(self):
         days_diff = (timezone.now() - self.last_open).days

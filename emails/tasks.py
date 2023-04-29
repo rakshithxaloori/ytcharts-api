@@ -30,7 +30,7 @@ def send_email_task(email_pk, client=Email.RESEND):
                 subject=email.subject,
                 html_message=email.html_message,
                 plain_message=email.plain_message,
-                sender=email.sender,
+                sender=f"{email.user.first_name} {email.user.last_name} <{email.sender}>",
                 reply_to=email.reply_to,
                 client=client,
             )

@@ -58,22 +58,22 @@ def update_channels(username=None):
         yt_channels = get_yt_channels_yt_api(access_keys.access_token)
         new_channel_ids = [yt_ch["id"] for yt_ch in yt_channels]
 
-    # Delete
-    for channel in Channel.objects.filter(user=user):
-        if channel.channel_id not in new_channel_ids:
-            channel.delete()
+        # Delete
+        for channel in Channel.objects.filter(user=user):
+            if channel.channel_id not in new_channel_ids:
+                channel.delete()
 
-    # Create or update
-    for yt_channel in yt_channels:
-        Channel.objects.update_or_create(
-            user=user,
-            channel_id=yt_channel["id"],
-            defaults={
-                "title": yt_channel["snippet"]["title"],
-                "thumbnail": yt_channel["snippet"]["thumbnails"]["default"]["url"],
-                "subscriber_count": yt_channel["statistics"]["subscriberCount"],
-            },
-        )
+        # Create or update
+        for yt_channel in yt_channels:
+            Channel.objects.update_or_create(
+                user=user,
+                channel_id=yt_channel["id"],
+                defaults={
+                    "title": yt_channel["snippet"]["title"],
+                    "thumbnail": yt_channel["snippet"]["thumbnails"]["default"]["url"],
+                    "subscriber_count": yt_channel["statistics"]["subscriberCount"],
+                },
+            )
 
 
 def fetch_latest_videos(username=None):

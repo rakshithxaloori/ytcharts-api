@@ -1,5 +1,7 @@
 from django.http import JsonResponse
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.contrib.auth.validators import UnicodeUsernameValidator
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -52,6 +54,7 @@ def signin_view(request):
         )
         user = User.objects.create(
             username=user_info["id"],
+            open_id=user_info["id"],
             email=user_info["email"],
             first_name=user_info["given_name"],
             last_name=user_info["family_name"],
@@ -71,3 +74,39 @@ def last_open_view(request):
     user.last_open = timezone.now()
     user.save(update_fields=["last_open"])
     return JsonResponse({"detail": "last_open saved!"}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_custom_username_view(request):
+    user = request.user
+    return JsonResponse(
+        {
+            "detail": "custom_username",
+            "payload": {
+                "is_custom_username": user.is_custom_username,
+                "username": user.username,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def post_custom_username_view(request):
+    username = request.data.get("username", None)
+    user = request.user
+    if username is None or user.is_custom_username:
+        return BAD_REQUEST_RESPONSE
+    validator = UnicodeUsernameValidator()
+    try:
+        validator(username)
+        user.username = username
+        user.is_custom_username = True
+        user.save(update_fields=["username", "is_custom_username"])
+        return JsonResponse({"detail": "username saved!"}, status=status.HTTP_200_OK)
+    except ValidationError:
+        return BAD_REQUEST_RESPONSE

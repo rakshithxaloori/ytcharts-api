@@ -78,8 +78,8 @@ def stripe_webhook_view(request):
             user = User.objects.get(email=email)
 
             # Convert current_period_end to datetime
-            current_period_end = datetime.datetime.fromtimestamp(
-                subscription.current_period_end
+            current_period_end = timezone.make_aware(
+                datetime.datetime.fromtimestamp(subscription.current_period_end)
             )
             Customer.objects.update_or_create(
                 user=user,

@@ -110,7 +110,7 @@ class DailyViews(models.Model):
         return f"{self.video.video_id} {self.user.username} {self.country_code} | {self.date}: {self.views}"
 
     class Meta:
-        ordering = ["video__published_at", "date"]
+        ordering = ["date", "video__published_at"]
         verbose_name_plural = "Daily Views"
 
 

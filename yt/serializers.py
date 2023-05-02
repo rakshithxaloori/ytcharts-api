@@ -1,13 +1,40 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
-from yt.models import Video, DailyViews
+from yt.models import Channel, Video, TopCountry, DailyViews
+
+
+class ChannelSerializer(ModelSerializer):
+    class Meta:
+        model = Channel
+        fields = ["channel_id", "title", "thumbnail", "subscriber_count"]
 
 
 class VideoSerializer(ModelSerializer):
+    channel = ChannelSerializer()
+    id = SerializerMethodField()
+
     class Meta:
         model = Video
-        fields = ["video_id", "title", "thumbnail", "published_at"]
+        fields = ["channel", "id", "title", "thumbnail", "published_at"]
+
+    def get_id(self, obj):
+        return obj.video_id
+
+
+class TopCountrySerializer(ModelSerializer):
+    class Meta:
+        model = TopCountry
+        fields = [
+            "country_code",
+            "views",
+            "estimated_minutes_watched",
+            "average_view_duration",
+            "average_viewer_percentage",
+            "subscribers_gained",
+            "start_date",
+            "end_date",
+        ]
 
 
 class DailyViewsSerializer(ModelSerializer):

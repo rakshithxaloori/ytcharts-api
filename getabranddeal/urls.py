@@ -31,6 +31,7 @@ urlpatterns = [
     path("yt/", include("yt.urls")),
     path("emails/", include("emails.urls")),
     path("payments/", include("payments.urls")),
+    path("profiles/", include("profiles.urls")),
     path("ht/", include("health.urls")),
 ]
 

@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "yt",
     "emails",
     "payments",
+    "profiles",
     "health",
 ]
 

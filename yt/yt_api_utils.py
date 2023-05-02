@@ -113,8 +113,6 @@ def get_day_views_yt_api(username, video_id, country_code=None):
 
 def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
     # TODO test this without the testing accounts
-    print("get_demographics_viewer_perc_yt_api")
-    print(username, video_id, country_code)
     if username in TESTING_ACCOUNTS:
         return test_get_demographics_viewer_perc_yt_api()
     country_code = None if country_code == "##" else country_code

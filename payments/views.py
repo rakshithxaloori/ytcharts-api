@@ -37,7 +37,8 @@ def has_active_subscription_view(request):
                 "payload": {
                     "is_active": customer.current_period_end > timezone.now(),
                 },
-            }
+            },
+            status=status.HTTP_200_OK,
         )
     except Customer.DoesNotExist:
         return JsonResponse(
@@ -46,7 +47,8 @@ def has_active_subscription_view(request):
                 "payload": {
                     "is_active": False,
                 },
-            }
+            },
+            status=status.HTTP_200_OK,
         )
 
 

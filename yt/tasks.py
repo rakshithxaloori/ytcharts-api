@@ -86,13 +86,25 @@ def fetch_latest_videos(username=None):
         videos = get_videos_yt_api(user.username, max_results=VIDEOS_COUNT)
         for video in videos:
             channel = Channel.objects.get(channel_id=video["snippet"]["channelId"])
+
+            if "maxres" in video["snippet"]["thumbnails"]:
+                thumbnail = video["snippet"]["thumbnails"]["maxres"]["url"]
+            elif "standard" in video["snippet"]["thumbnails"]:
+                thumbnail = video["snippet"]["thumbnails"]["standard"]["url"]
+            elif "high" in video["snippet"]["thumbnails"]:
+                thumbnail = video["snippet"]["thumbnails"]["high"]["url"]
+            elif "medium" in video["snippet"]["thumbnails"]:
+                thumbnail = video["snippet"]["thumbnails"]["medium"]["url"]
+            elif "default" in video["snippet"]["thumbnails"]:
+                thumbnail = video["snippet"]["thumbnails"]["default"]["url"]
+
             Video.objects.update_or_create(
                 user=user,
                 video_id=video["id"]["videoId"],
                 channel=channel,
                 defaults={
                     "title": video["snippet"]["title"],
-                    "thumbnail": video["snippet"]["thumbnails"]["default"]["url"],
+                    "thumbnail": thumbnail,
                     "description": video["snippet"]["description"],
                     "published_at": video["snippet"]["publishedAt"],
                 },
@@ -182,7 +194,6 @@ def fetch_demographics_views(username=None):
                 )
                 top_countries_codes.append("##")
                 for top_country_code in top_countries_codes:
-                    country_code = top_country_code
                     demographics_views = get_demographics_viewer_perc_yt_api(
                         user.username, video.video_id, top_country_code
                     )

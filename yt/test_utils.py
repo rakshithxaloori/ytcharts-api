@@ -1,7 +1,7 @@
 import random
 from datetime import date, timedelta
 
-from yt.models import DemographicsViews
+from yt.models import Demographics
 
 NUM_DAYS = 90
 
@@ -37,7 +37,7 @@ demographicsViewerPercResultTable = {
 
 
 def test_get_demographics_viewer_perc_yt_api():
-    age_groups = [age_group[0] for age_group in DemographicsViews.AGE_CHOICES]
+    age_groups = [age_group[0] for age_group in Demographics.AGE_CHOICES]
     genders = ["male", "female", "user_specified"]
     total_percentage = 0
 

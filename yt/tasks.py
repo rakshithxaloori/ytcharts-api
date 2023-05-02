@@ -11,7 +11,7 @@ from yt.models import (
     Video,
     TopCountry,
     DailyViews,
-    DemographicsViews,
+    Demographics,
 )
 from yt.yt_api_utils import (
     get_yt_channels_yt_api,
@@ -203,12 +203,12 @@ def fetch_demographics_views(username=None):
                         if len(row) == 3:
                             yt_gender = row[1]
                             if yt_gender == "female":
-                                yt_gender = DemographicsViews.FEMALE
+                                yt_gender = Demographics.FEMALE
                             elif yt_gender == "male":
-                                yt_gender = DemographicsViews.MALE
+                                yt_gender = Demographics.MALE
                             else:
-                                yt_gender = DemographicsViews.USER_UNSPECIFIED
-                            DemographicsViews.objects.update_or_create(
+                                yt_gender = Demographics.USER_UNSPECIFIED
+                            Demographics.objects.update_or_create(
                                 user=user,
                                 video=video,
                                 country_code=top_country_code,

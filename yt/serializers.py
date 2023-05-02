@@ -1,7 +1,7 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
-from yt.models import Channel, Video, TopCountry, DailyViews
+from yt.models import Channel, Video, TopCountry, DailyViews, Demographics
 
 
 class ChannelSerializer(ModelSerializer):
@@ -41,3 +41,9 @@ class DailyViewsSerializer(ModelSerializer):
     class Meta:
         model = DailyViews
         fields = ["date", "views"]
+
+
+class DemographicsSerializer(ModelSerializer):
+    class Meta:
+        model = Demographics
+        fields = ["age_group", "gender", "viewer_percentage", "start_date", "end_date"]

@@ -114,7 +114,7 @@ class DailyViews(models.Model):
         verbose_name_plural = "Daily Views"
 
 
-class DemographicsViews(models.Model):
+class Demographics(models.Model):
     # X-axis - ageGroup,gender
     AGE_13_TO_17 = "age13-17"
     AGE_18_TO_24 = "age18-24"
@@ -143,10 +143,10 @@ class DemographicsViews(models.Model):
     )
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="demographics_viewer_percentage"
+        User, on_delete=models.CASCADE, related_name="u_demographics"
     )
     video = models.ForeignKey(
-        Video, on_delete=models.CASCADE, related_name="demographics_viewer_percentage"
+        Video, on_delete=models.CASCADE, related_name="v_demographics"
     )
     created_at = models.DateTimeField(default=timezone.now)
 

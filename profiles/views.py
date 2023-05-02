@@ -13,6 +13,7 @@ from yt.serializers import (
     VideoSerializer,
     TopCountrySerializer,
     DailyViewsSerializer,
+    DemographicsSerializer,
 )
 from authentication.serializers import ProfileSerializer
 
@@ -52,6 +53,8 @@ def get_profile_view(request):
         top_countries_codes.append("##")
 
         daily_views_data = {}
+        demographics_data = {}
+
         for top_country_code in top_countries_codes:
             country_code = top_country_code
             dw = (
@@ -62,6 +65,10 @@ def get_profile_view(request):
             dw_data = DailyViewsSerializer(dw, many=True).data
             daily_views_data[country_code] = dw_data
 
+            dv = user.u_demographics.filter(country_code=country_code, video=video)
+            dv_data = DemographicsSerializer(dv, many=True).data
+            demographics_data[country_code] = dv_data
+
         return JsonResponse(
             {
                 "detail": f"{user.username}'s profile data",
@@ -70,6 +77,7 @@ def get_profile_view(request):
                     "video": VideoSerializer(video).data,
                     "top_countries": top_countries_data,
                     "daily_views": daily_views_data,
+                    "demographics": demographics_data,
                     "videos": videos_data,
                 },
             },

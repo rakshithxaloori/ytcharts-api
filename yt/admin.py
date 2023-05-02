@@ -6,7 +6,7 @@ from yt.models import (
     AccessKeys,
     TopCountry,
     DailyViews,
-    DemographicsViews,
+    Demographics,
 )
 
 
@@ -15,4 +15,4 @@ admin.site.register(Video)
 admin.site.register(AccessKeys)
 admin.site.register(TopCountry)
 admin.site.register(DailyViews)
-admin.site.register(DemographicsViews)
+admin.site.register(Demographics)

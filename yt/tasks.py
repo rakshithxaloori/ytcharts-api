@@ -55,7 +55,7 @@ def update_channels(username=None):
         access_keys_list = AccessKeys.objects.filter(user__username=username)
     for access_keys in access_keys_list:
         user = access_keys.user
-        yt_channels = get_yt_channels_yt_api(access_keys.access_token)
+        yt_channels = get_yt_channels_yt_api(user.username)
         new_channel_ids = [yt_ch["id"] for yt_ch in yt_channels]
 
         # Delete
@@ -82,12 +82,12 @@ def fetch_latest_videos(username=None):
     else:
         access_keys_list = AccessKeys.objects.filter(user__username=username)
     for access_keys in access_keys_list:
-        username = access_keys.user.username
-        videos = get_videos_yt_api(username, max_results=VIDEOS_COUNT)
+        user = access_keys.user
+        videos = get_videos_yt_api(user.username, max_results=VIDEOS_COUNT)
         for video in videos:
             channel = Channel.objects.get(channel_id=video["snippet"]["channelId"])
             Video.objects.update_or_create(
-                user=access_keys.user,
+                user=user,
                 video_id=video["id"]["videoId"],
                 channel=channel,
                 defaults={
@@ -109,12 +109,12 @@ def fetch_top_countries(username=None):
         "%Y-%m-%d"
     )
     for access_keys in access_keys_list:
-        username = access_keys.user.username
-        top_countries = get_top_countries_yt_api(username)
+        user = access_keys.user
+        top_countries = get_top_countries_yt_api(user.username)
         for row in top_countries["rows"]:
             if len(row) == 6:
                 TopCountry.objects.update_or_create(
-                    user=access_keys.user,
+                    user=user,
                     country_code=row[0],
                     defaults={
                         "views": row[1],
@@ -135,26 +135,27 @@ def fetch_daily_views(username=None):
     else:
         access_keys_list = AccessKeys.objects.filter(user__username=username)
     for access_keys in access_keys_list:
-        username = access_keys.user.username
-        for channel in Channel.objects.filter(user=access_keys.user):
+        user = access_keys.user
+        for channel in Channel.objects.filter(user=user):
             for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
                 top_countries_codes = list(
-                    TopCountry.objects.filter(user=access_keys.user).values_list(
+                    TopCountry.objects.filter(user=user).values_list(
                         "country_code", flat=True
                     )
                 )
                 top_countries_codes.append("##")
                 for top_country_code in top_countries_codes:
-                    country_code = top_country_code
-                    day_views = get_day_views_yt_api(username, video.id, country_code)
-                    if "rows" not in day_views:
+                    day_views = get_day_views_yt_api(
+                        user.username, video.video_id, top_country_code
+                    )
+                    if day_views is None or "rows" not in day_views:
                         continue
                     for row in day_views["rows"]:
                         if len(row) == 2:
                             DailyViews.objects.update_or_create(
-                                user=access_keys.user,
+                                user=user,
                                 video=video,
-                                country_code=country_code,
+                                country_code=top_country_code,
                                 date=row[0],
                                 defaults={"views": row[1]},
                             )
@@ -171,11 +172,11 @@ def fetch_demographics_views(username=None):
         "%Y-%m-%d"
     )
     for access_keys in access_keys_list:
-        username = access_keys.user.username
-        for channel in Channel.objects.filter(user=access_keys.user):
+        user = access_keys.user
+        for channel in Channel.objects.filter(user=user):
             for video in channel.videos.order_by("-published_at")[:VIDEOS_COUNT]:
                 top_countries_codes = list(
-                    TopCountry.objects.filter(user=access_keys.user).values_list(
+                    TopCountry.objects.filter(user=user).values_list(
                         "country_code", flat=True
                     )
                 )
@@ -183,9 +184,9 @@ def fetch_demographics_views(username=None):
                 for top_country_code in top_countries_codes:
                     country_code = top_country_code
                     demographics_views = get_demographics_viewer_perc_yt_api(
-                        username, video.id, country_code
+                        user.username, video.video_id, top_country_code
                     )
-                    if "rows" not in demographics_views:
+                    if demographics_views is None or "rows" not in demographics_views:
                         continue
                     for row in demographics_views["rows"]:
                         if len(row) == 3:
@@ -197,9 +198,9 @@ def fetch_demographics_views(username=None):
                             else:
                                 yt_gender = DemographicsViews.USER_UNSPECIFIED
                             DemographicsViews.objects.update_or_create(
-                                user=access_keys.user,
+                                user=user,
                                 video=video,
-                                country_code=country_code,
+                                country_code=top_country_code,
                                 age_group=row[0],
                                 gender=yt_gender,
                                 defaults={

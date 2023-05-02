@@ -16,6 +16,26 @@ from getabranddeal.utils import get_now_timestamp, TESTING_ACCOUNTS
 yt_reports_endpoint = "https://youtubeanalytics.googleapis.com/v2/reports"
 
 
+def get_yt_channels_yt_api(username: str = None):
+    access_token = get_access_token(username)
+    if access_token is None:
+        return None
+
+    endpoint = "https://www.googleapis.com/youtube/v3/channels"
+    params = {"part": "snippet,statistics", "mine": "true", "maxResults": "50"}
+    headers = {
+        "Authorization": "Bearer {}".format(access_token),
+    }
+    response = requests.get(endpoint, params=params, headers=headers)
+    if response.ok:
+        json_data = response.json()
+        return json_data.get("items", None)
+    else:
+        print("get_yt_channels_info ERROR", response.status_code, response.reason)
+        print(response.json())
+        return None
+
+
 def get_top_countries_yt_api(username):
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime(
@@ -31,6 +51,8 @@ def get_top_countries_yt_api(username):
     }
 
     access_token = get_access_token(username)
+    if access_token is None:
+        return None
     headers = {
         "Authorization": f"Bearer {access_token}",
     }
@@ -43,6 +65,7 @@ def get_top_countries_yt_api(username):
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        print(response.json())
         return None
 
 
@@ -71,6 +94,8 @@ def get_day_views_yt_api(username, video_id, country_code=None):
 
     # Set the authorization header with the access token
     access_token = get_access_token(username)
+    if access_token is None:
+        return None
     headers = {"Authorization": f"Bearer {access_token}"}
 
     # Make the API request
@@ -82,11 +107,14 @@ def get_day_views_yt_api(username, video_id, country_code=None):
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        print(response.json())
         return None
 
 
 def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
     # TODO test this without the testing accounts
+    print("get_demographics_viewer_perc_yt_api")
+    print(username, video_id, country_code)
     if username in TESTING_ACCOUNTS:
         return test_get_demographics_viewer_perc_yt_api()
     country_code = None if country_code == "##" else country_code
@@ -108,6 +136,8 @@ def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
 
     # Set the headers with the access_token
     access_token = get_access_token(username)
+    if access_token is None:
+        return None
     headers = {"Authorization": f"Bearer {access_token}"}
 
     # Send the request and get the response
@@ -117,6 +147,7 @@ def get_demographics_viewer_perc_yt_api(username, video_id, country_code=None):
         return data
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        print(response.json())
         return None
 
 
@@ -156,10 +187,14 @@ def get_yt_keys(auth_code):
         return response_json
     else:
         print(f"Error retrieving data: {response.status_code} - {response.reason}")
+        print(response.json())
         return None
 
 
-def get_access_token(username):
+def get_access_token(username=None):
+    if username is None:
+        return None
+
     try:
         # Check access token expiry
         yt_keys = AccessKeys.objects.get(user__username=username, is_refresh_valid=True)
@@ -200,24 +235,6 @@ def get_access_token(username):
 ##########################################################
 # Using YouTube API Key
 API_KEY = settings.GOOGLE_API_KEY
-
-
-def get_yt_channels_yt_api(access_token: str = None):
-    if access_token is None:
-        return None
-
-    endpoint = "https://www.googleapis.com/youtube/v3/channels"
-    params = {"part": "snippet,statistics", "mine": "true", "maxResults": "50"}
-    headers = {
-        "Authorization": "Bearer {}".format(access_token),
-    }
-    response = requests.get(endpoint, params=params, headers=headers)
-    if response.ok:
-        json_data = response.json()
-        return json_data.get("items", None)
-    else:
-        print("get_yt_channels_info ERROR", response.status_code, response.reason)
-        return None
 
 
 def get_videos_yt_api(username, max_results=5):

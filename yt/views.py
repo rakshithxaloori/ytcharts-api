@@ -18,12 +18,11 @@ from knox.models import AuthToken
 
 
 from authentication.models import User
-from authentication.utils import token_response
 from authentication.google import get_google_user_info
 from getabranddeal.utils import BAD_REQUEST_RESPONSE
-from yt.yt_api_utils import get_yt_keys, get_access_token
-from yt.models import AccessKeys, Video, DailyViews
-from yt.serializers import VideoSerializer, DailyViewsSerializer
+from yt.yt_api_utils import get_yt_keys
+from yt.models import FetchStatus, AccessKeys, Video, DailyViews
+from yt.serializers import FetchStatusSerializer, VideoSerializer, DailyViewsSerializer
 from yt.isocodes import ISO_CODES
 from yt.tasks import fetch_daily_analytics_task
 
@@ -52,6 +51,8 @@ def connect_yt_view(request):
         return BAD_REQUEST_RESPONSE
     try:
         user = User.objects.get(email=google_user_info["email"])
+        # Create FetchStatus object for the user if it doesn't exist
+        FetchStatus.objects.get_or_create(user=user)
         AccessKeys.objects.update_or_create(
             user=user,
             defaults={
@@ -61,8 +62,6 @@ def connect_yt_view(request):
                 "is_refresh_valid": True,
             },
         )
-
-        AuthToken.objects.filter(user=user).delete()
 
         fetch_daily_analytics_task.delay(user.username)
         return JsonResponse(
@@ -118,6 +117,26 @@ def get_views_view(request):
                 "video": VideoSerializer(video).data,
                 "data": payload_data,
             },
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_status_view(request):
+    user = request.user
+    try:
+        fetch_status = FetchStatus.objects.get(user=user)
+    except FetchStatus.DoesNotExist:
+        return BAD_REQUEST_RESPONSE
+
+    fetch_status_data = FetchStatusSerializer(fetch_status).data
+    return JsonResponse(
+        {
+            "detail": "Fetch status",
+            "payload": fetch_status_data,
         },
         status=status.HTTP_200_OK,
     )

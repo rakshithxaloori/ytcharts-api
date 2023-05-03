@@ -7,6 +7,26 @@ from django.utils import timezone
 from authentication.models import User
 
 
+class FetchStatus(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="fetch_status"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    is_fetching_at = models.DateTimeField(null=True, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    is_daily_views_fetching = models.BooleanField(default=False)
+    is_demographics_fetching = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f"{self.user.username} | {self.fetched_at}"
+
+    class Meta:
+        ordering = ["-fetched_at"]
+        verbose_name_plural = "Fetch Statuses"
+
+
 class Channel(models.Model):
     user = models.ForeignKey(User, related_name="channels", on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)

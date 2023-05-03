@@ -1,11 +1,15 @@
 import datetime
 
+from django.utils import timezone
+
 from celery.schedules import crontab
 
 
 from getabranddeal.celery import app as celery_app
 
+from authentication.models import User
 from yt.models import (
+    FetchStatus,
     AccessKeys,
     Channel,
     Video,
@@ -36,6 +40,25 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @celery_app.task
 def fetch_daily_analytics_task(username=None):
+    if isinstance(username, str):
+        if User.objects.filter(username=username).exists():
+            # Update FetchStatus
+            FetchStatus.objects.filter(user__username=username).update(
+                is_fetching_at=timezone.now(),
+                is_daily_views_fetching=True,
+                is_demographics_fetching=True,
+            )
+        else:
+            return
+    else:
+        # Update all users with access_keys
+        access_keys_list = AccessKeys.objects.all()
+        for access_keys in access_keys_list:
+            FetchStatus.objects.filter(user=access_keys.user).update(
+                is_fetching_at=timezone.now(),
+                is_daily_views_fetching=True,
+                is_demographics_fetching=True,
+            )
     # Update channels
     update_channels(username)
     # Fetch all recent videos
@@ -172,6 +195,12 @@ def fetch_daily_views(username=None):
                                 defaults={"views": row[1]},
                             )
 
+        # Update FetchStatus
+        FetchStatus.objects.filter(user=user).update(
+            fetched_at=timezone.now(),
+            is_daily_views_fetching=False,
+        )
+
 
 @celery_app.task
 def fetch_demographics_views(username=None):
@@ -220,3 +249,9 @@ def fetch_demographics_views(username=None):
                                     "end_date": end_date,
                                 },
                             )
+
+        # Update FetchStatus
+        FetchStatus.objects.filter(user=user).update(
+            fetched_at=timezone.now(),
+            is_demographics_fetching=False,
+        )

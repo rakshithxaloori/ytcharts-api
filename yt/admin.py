@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from yt.models import (
+    FetchStatus,
     Channel,
     Video,
     AccessKeys,
@@ -10,6 +11,7 @@ from yt.models import (
 )
 
 
+admin.site.register(FetchStatus)
 admin.site.register(Channel)
 admin.site.register(Video)
 admin.site.register(AccessKeys)

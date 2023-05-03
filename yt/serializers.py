@@ -1,7 +1,18 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
-from yt.models import Channel, Video, TopCountry, DailyViews, Demographics
+from yt.models import FetchStatus, Channel, Video, TopCountry, DailyViews, Demographics
+
+
+class FetchStatusSerializer(ModelSerializer):
+    class Meta:
+        model = FetchStatus
+        fields = [
+            "is_fetching_at",
+            "fetched_at",
+            "is_daily_views_fetching",
+            "is_demographics_fetching",
+        ]
 
 
 class ChannelSerializer(ModelSerializer):

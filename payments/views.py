@@ -97,7 +97,12 @@ def stripe_webhook_view(request):
             return HttpResponse(status=200)
 
     elif poll_type == "customer.subscription.deleted":
-        print(subscription)
-        # TODO set is_active to False
+        customer = stripe.Customer.retrieve(subscription.customer)
+        try:
+            email = customer.email
+            user = User.objects.get(email=email)
+            Customer.objects.filter(user=user).update(is_active=False)
+        except User.DoesNotExist:
+            pass
 
     return HttpResponse(status=200)

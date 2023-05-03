@@ -152,7 +152,20 @@ def get_presigned_post_view(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def post_email_view(request):
-    # TODO only 100 emails per day
+    # Check if user has reached daily limit of 10 email
+    if (
+        request.user.emails.filter(
+            created_at__gte=timezone.now() - timezone.timedelta(days=1)
+        ).count()
+        >= 10
+    ):
+        return JsonResponse(
+            {
+                "detail": "You have reached your daily limit of 10 emails",
+                "payload": {},
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
     to = request.data.get("to", None)
     subject = request.data.get("subject", None)
     html_message = request.data.get("html_message", None)
